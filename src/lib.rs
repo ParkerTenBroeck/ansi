@@ -1,5 +1,11 @@
 #![no_std]
 
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+
+mod test;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Out<'a> {
     Ansi(Ansi<'a>),
@@ -89,7 +95,6 @@ pub enum C0 {
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-/// This is a sequence starting with 0x1b
 pub enum C1<'a> {
     /// 0x20-0x2F,
     nF(nF<'a>),
@@ -131,71 +136,72 @@ pub enum Fp {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// A sequence starting with 0x1b with a character in the range 0x40-0x5F following
+#[repr(u8)]
 pub enum Fe<'a> {
     /// '@' Padding Character
-    PAD,
+    PAD = b'@',
     /// 'A' High Octet Preset
-    HOP,
-    /// '' Break Permitted Here
-    BPH,
+    HOP = b'A',
+    /// ''B Break Permitted Here
+    BPH = b'B',
     /// 'C' No Break Here
-    NBH,
+    NBH = b'C',
     /// 'D' Index
-    IND,
+    IND = b'D',
     /// 'E' Next Line
-    NEL,
+    NEL = b'E',
     /// 'F' Start of Selected Area
-    SSA,
+    SSA = b'F',
     /// 'G' End of Selected Area
-    ESA,
+    ESA = b'G',
     /// 'H' Character Tabulation Set/Horizontal Tabulation Set
-    HTS,
+    HTS = b'H',
     /// 'I' Character Tabulation With Justification/Horizontal Tabulation With Justification
-    HTJ,
+    HTJ = b'I',
     /// 'J' Line Tabulation Set/Vertical Tabulation Set
-    VTS,
+    VTS = b'J',
     /// 'K' Partial Line Forward/Partial Line Down
-    PLD,
+    PLD = b'K',
     /// 'L' Partial Line Backward/Partial Line Up
-    PLU,
+    PLU = b'L',
     /// 'M' Reverse Line Feed/Reverse Index
-    RI,
+    RI = b'M',
     /// 'N' Single-Shift 2
-    SS2,
+    SS2 = b'N',
     /// 'O' Single-Shift 3
-    SS3,
+    SS3 = b'O',
     /// 'P' Device Control String
-    DCS,
+    DCS = b'P',
     /// 'Q' Private Use 1
-    PU1,
+    PU1 = b'Q',
     /// 'R' Private Use 2
-    PU2,
+    PU2 = b'R',
     /// 'S' Set Transmit State
-    STS,
+    STS = b'S',
     /// 'T' Cancel character
-    CCH,
+    CCH = b'T',
     /// 'U' Message Waiting
-    MW,
+    MW = b'U',
     /// 'V' Start of Protected Area
-    SPA,
+    SPA = b'V',
     /// 'W' End of Protected Area
-    EPA,
+    EPA = b'W',
     /// 'X' Start of String
-    SOS,
+    SOS = b'X',
     /// 'Y' Single Graphic Character Introducer
-    SGCI,
+    SGCI = b'Y',
     /// 'Z' Single Character Introducer
-    SCI,
+    SCI = b'Z',
     /// '[' Control Sequence Introducer [CSI]
-    CSI(CSI<'a>),
+    CSI(CSI<'a>) = b'[',
     /// '\' String Terminator
-    ST,
+    ST = b'\\',
     /// ']' Operating System Command
-    OSC,
+    OSC = b']',
     /// '^' Privacy Message
-    PM,
+    PM = b'^',
     /// '_' Application Program Command
-    APC,
+    APC = b'_',
 
     DCSData(char),
     SData(char),
@@ -604,6 +610,7 @@ enum State {
     Nf(bool),
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum CsiStatus {
     Ok,
     Ignore,
@@ -691,9 +698,9 @@ impl<const CSI_MAX_PARAMS: usize, const BYTE_BUF_SIZE: usize>
             *e = input;
             if let Some(r) = self.byte_buffer_count.checked_add(1) {
                 self.byte_buffer_count = r;
-                Err(())
-            } else {
                 Ok(())
+            } else {
+                Err(())
             }
         } else {
             Err(())
@@ -972,14 +979,14 @@ impl<const CSI_MAX_PARAMS: usize, const BYTE_BUF_SIZE: usize>
                 },
                 State::Csi | State::CsiIntermediate => match input {
                     '\x20'..='\x2f' => {
-                        if self.insert_into_byte_buffer(input as u8).is_err() {
+                        if self.insert_into_byte_buffer(input as u8).is_err() && self.csi_status != CsiStatus::Ignore {
                             self.csi_status = CsiStatus::IntermediateOverflow;
                         }
 
                         self.state = State::CsiIntermediate;
                         Out::None
                     }
-                    '\x30'..='\x3f' if self.state == State::CsiIntermediate => {
+                    '0'..='9'|'\x3a'..='\x3f' if self.state == State::CsiIntermediate => {
                         self.csi_status = CsiStatus::Ignore;
                         Out::None
                     }
@@ -987,7 +994,7 @@ impl<const CSI_MAX_PARAMS: usize, const BYTE_BUF_SIZE: usize>
                         if self.csi_param_count == 0 {
                             self.csi_param_count = 1;
                         }
-                        if let Some(v) = self.csi_params.get_mut(self.csi_param_count as usize) {
+                        if let Some(v) = self.csi_params.get_mut(self.csi_param_count as usize-1) {
                             if let Some(nv) = v
                                 .checked_mul(10)
                                 .and_then(|v| v.checked_add((d as u8 - b'0') as u16))
@@ -995,9 +1002,11 @@ impl<const CSI_MAX_PARAMS: usize, const BYTE_BUF_SIZE: usize>
                                 *v = nv;
                             } else {
                                 *v = v.wrapping_mul(10).wrapping_add((d as u8 - b'0') as u16);
-                                self.csi_status = CsiStatus::IntegerOverflow;
+                                if  self.csi_status != CsiStatus::Ignore{
+                                    self.csi_status = CsiStatus::IntegerOverflow;
+                                }
                             }
-                        } else {
+                        } else if self.csi_status != CsiStatus::Ignore {
                             self.csi_status = CsiStatus::SequenceTooLarge;
                         }
                         Out::None
@@ -1013,10 +1022,10 @@ impl<const CSI_MAX_PARAMS: usize, const BYTE_BUF_SIZE: usize>
                                 self.csi_params.get_mut(self.csi_param_count as usize)
                             {
                                 *next = 0;
-                            } else {
+                            } else if self.csi_status != CsiStatus::Ignore{
                                 self.csi_status = CsiStatus::SequenceTooLarge;
                             }
-                        } else {
+                        } else if self.csi_status != CsiStatus::Ignore{
                             self.csi_status = CsiStatus::SequenceTooLarge;
                         }
                         Out::None
