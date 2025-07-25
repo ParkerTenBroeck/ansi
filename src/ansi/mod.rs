@@ -5,6 +5,16 @@ pub use parser::*;
 pub enum Out<'a> {
     Ansi(Ansi<'a>),
     Data(char),
+
+    DCSData(char),
+    SData(char),
+    PMData(char),
+    APCData(char),
+    OSData(char),
+
+    InvalidUtf8Sequence,
+    InvalidCodepoint(u32),
+
     None,
 }
 
@@ -99,15 +109,16 @@ pub enum C1<'a> {
     /// 0x60-0x7E,
     Fs(Fs),
     /// Not nF, Fp, Fe, Fs
-    Invalid(char),
+    Invalid(u8),
 }
 
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// A sequence starting with 0x1b with a character in the range 0x20-0x2F following
 pub enum nF<'a> {
-    Unknown(&'a [u8], char),
+    Unknown(&'a [u8]),
     SequenceTooLarge,
+    InvalidSequence,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -205,12 +216,6 @@ pub enum Fe<'a> {
     PM = b'^',
     /// '_' Application Program Command
     APC = b'_',
-
-    DCSData(char),
-    SData(char),
-    PMData(char),
-    APCData(char),
-    OSData(char),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

@@ -1,5 +1,3 @@
-use crate::CsiMod;
-
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -158,169 +156,169 @@ impl<'a> Iterator for GraphicsRendition<'a> {
 }
 
 impl<'a> CSI<'a> {
-    pub fn parse(csi_mod: CsiMod, params: &'a [u16], intermediates: &'a [u8], last: char) -> Self {
-        match (csi_mod, params, intermediates, last) {
-            (CsiMod::Standard, [line, col], [], 'f') => CSI::HorizontalVerticalPosition {
-                line: *line,
-                col: *col,
-            },
-            (CsiMod::Standard, [], [], 'f') => CSI::CursorTo { line: 1, col: 1 },
+    // pub fn parse(csi_mod: CsiMod, params: &'a [u16], intermediates: &'a [u8], last: char) -> Self {
+    //     match (csi_mod, params, intermediates, last) {
+    //         (CsiMod::Standard, [line, col], [], 'f') => CSI::HorizontalVerticalPosition {
+    //             line: *line,
+    //             col: *col,
+    //         },
+    //         (CsiMod::Standard, [], [], 'f') => CSI::CursorTo { line: 1, col: 1 },
 
-            (CsiMod::Standard, [line, col], [], 'H') => CSI::CursorTo {
-                line: *line,
-                col: *col,
-            },
-            (CsiMod::Standard, [], [], 'H') => CSI::CursorTo { line: 1, col: 1 },
+    //         (CsiMod::Standard, [line, col], [], 'H') => CSI::CursorTo {
+    //             line: *line,
+    //             col: *col,
+    //         },
+    //         (CsiMod::Standard, [], [], 'H') => CSI::CursorTo { line: 1, col: 1 },
 
-            (CsiMod::Standard, [amount], [], 'A') => CSI::CursorUp(*amount),
-            (CsiMod::Standard, [], [], 'A') => CSI::CursorUp(1),
+    //         (CsiMod::Standard, [amount], [], 'A') => CSI::CursorUp(*amount),
+    //         (CsiMod::Standard, [], [], 'A') => CSI::CursorUp(1),
 
-            (CsiMod::Standard, [amount], [], 'B') => CSI::CursorDown(*amount),
-            (CsiMod::Standard, [], [], 'B') => CSI::CursorDown(1),
+    //         (CsiMod::Standard, [amount], [], 'B') => CSI::CursorDown(*amount),
+    //         (CsiMod::Standard, [], [], 'B') => CSI::CursorDown(1),
 
-            (CsiMod::Standard, [amount], [], 'C') => CSI::CursorRight(*amount),
-            (CsiMod::Standard, [], [], 'C') => CSI::CursorRight(1),
+    //         (CsiMod::Standard, [amount], [], 'C') => CSI::CursorRight(*amount),
+    //         (CsiMod::Standard, [], [], 'C') => CSI::CursorRight(1),
 
-            (CsiMod::Standard, [amount], [], 'D') => CSI::CursorLeft(*amount),
-            (CsiMod::Standard, [], [], 'D') => CSI::CursorLeft(1),
+    //         (CsiMod::Standard, [amount], [], 'D') => CSI::CursorLeft(*amount),
+    //         (CsiMod::Standard, [], [], 'D') => CSI::CursorLeft(1),
 
-            (CsiMod::Standard, [amount], [], 'E') => CSI::CursorNextLine(*amount),
-            (CsiMod::Standard, [], [], 'E') => CSI::CursorNextLine(1),
+    //         (CsiMod::Standard, [amount], [], 'E') => CSI::CursorNextLine(*amount),
+    //         (CsiMod::Standard, [], [], 'E') => CSI::CursorNextLine(1),
 
-            (CsiMod::Standard, [amount], [], 'F') => CSI::CursorPreviousLine(*amount),
-            (CsiMod::Standard, [], [], 'F') => CSI::CursorPreviousLine(1),
+    //         (CsiMod::Standard, [amount], [], 'F') => CSI::CursorPreviousLine(*amount),
+    //         (CsiMod::Standard, [], [], 'F') => CSI::CursorPreviousLine(1),
 
-            (CsiMod::Standard, [col], [], 'G') => CSI::CursorHorizontalAbsolute(*col),
-            (CsiMod::Standard, [], [], 'G') => CSI::CursorHorizontalAbsolute(1),
+    //         (CsiMod::Standard, [col], [], 'G') => CSI::CursorHorizontalAbsolute(*col),
+    //         (CsiMod::Standard, [], [], 'G') => CSI::CursorHorizontalAbsolute(1),
 
-            (CsiMod::Standard, [line], [], 'd') => CSI::CursorLineAbsolute(*line),
-            (CsiMod::Standard, [], [], 'd') => CSI::CursorLineAbsolute(1),
+    //         (CsiMod::Standard, [line], [], 'd') => CSI::CursorLineAbsolute(*line),
+    //         (CsiMod::Standard, [], [], 'd') => CSI::CursorLineAbsolute(1),
 
-            (CsiMod::Standard, [], [], 'J') => CSI::EraseDisplay,
-            (CsiMod::Standard, [0], [], 'J') => CSI::EraseFromCursor,
-            (CsiMod::Standard, [1], [], 'J') => CSI::EraseToCursor,
-            (CsiMod::Standard, [2], [], 'J') => CSI::EraseScreen,
-            (CsiMod::Standard, [3], [], 'J') => CSI::EraseSavedLines,
+    //         (CsiMod::Standard, [], [], 'J') => CSI::EraseDisplay,
+    //         (CsiMod::Standard, [0], [], 'J') => CSI::EraseFromCursor,
+    //         (CsiMod::Standard, [1], [], 'J') => CSI::EraseToCursor,
+    //         (CsiMod::Standard, [2], [], 'J') => CSI::EraseScreen,
+    //         (CsiMod::Standard, [3], [], 'J') => CSI::EraseSavedLines,
 
-            (CsiMod::Standard, [], [], 'K') => CSI::EraseFromCursorToEndOfLine,
-            (CsiMod::Standard, [0], [], 'K') => CSI::EraseFromCursorToEndOfLine,
-            (CsiMod::Standard, [1], [], 'K') => CSI::EraseFromCursorToEndOfLine,
-            (CsiMod::Standard, [2], [], 'K') => CSI::EraseLine,
+    //         (CsiMod::Standard, [], [], 'K') => CSI::EraseFromCursorToEndOfLine,
+    //         (CsiMod::Standard, [0], [], 'K') => CSI::EraseFromCursorToEndOfLine,
+    //         (CsiMod::Standard, [1], [], 'K') => CSI::EraseFromCursorToEndOfLine,
+    //         (CsiMod::Standard, [2], [], 'K') => CSI::EraseLine,
 
-            (CsiMod::Standard, [], [], 'L') => CSI::InsertLines(1),
-            (CsiMod::Standard, [lines], [], 'L') => CSI::InsertLines(*lines),
+    //         (CsiMod::Standard, [], [], 'L') => CSI::InsertLines(1),
+    //         (CsiMod::Standard, [lines], [], 'L') => CSI::InsertLines(*lines),
 
-            (CsiMod::Standard, [], [], 'M') => CSI::DeleteLines(1),
-            (CsiMod::Standard, [lines], [], 'M') => CSI::DeleteLines(*lines),
+    //         (CsiMod::Standard, [], [], 'M') => CSI::DeleteLines(1),
+    //         (CsiMod::Standard, [lines], [], 'M') => CSI::DeleteLines(*lines),
 
-            (CsiMod::Standard, [5], [], 'i') => CSI::AuxPortOn,
-            (CsiMod::Standard, [4], [], 'i') => CSI::AuxPortOff,
-            (CsiMod::Standard, [5], [], 'n') => CSI::DeviceStatusReport,
-            (CsiMod::Standard, [6], [], 'n') => CSI::ReportCursorPosition,
-            (CsiMod::Standard, [r, c], [], 'n') => CSI::ReportedCursorPosition { row: *r, col: *c },
+    //         (CsiMod::Standard, [5], [], 'i') => CSI::AuxPortOn,
+    //         (CsiMod::Standard, [4], [], 'i') => CSI::AuxPortOff,
+    //         (CsiMod::Standard, [5], [], 'n') => CSI::DeviceStatusReport,
+    //         (CsiMod::Standard, [6], [], 'n') => CSI::ReportCursorPosition,
+    //         (CsiMod::Standard, [r, c], [], 'n') => CSI::ReportedCursorPosition { row: *r, col: *c },
 
-            (CsiMod::Standard, [], [], 's') => CSI::SaveCurrentCursorPosition,
-            (CsiMod::Standard, [], [], 'u') => CSI::RestoreCurrentCursorPosition,
+    //         (CsiMod::Standard, [], [], 's') => CSI::SaveCurrentCursorPosition,
+    //         (CsiMod::Standard, [], [], 'u') => CSI::RestoreCurrentCursorPosition,
 
-            (CsiMod::Question, [25], [], 'h') => CSI::ShowCursor,
-            (CsiMod::Question, [25], [], 'l') => CSI::HideCursor,
+    //         (CsiMod::Question, [25], [], 'h') => CSI::ShowCursor,
+    //         (CsiMod::Question, [25], [], 'l') => CSI::HideCursor,
 
-            (CsiMod::Question, [1004], [], 'h') => CSI::EnableFocusReporting,
-            (CsiMod::Question, [1004], [], 'l') => CSI::DisableFocusReporting,
+    //         (CsiMod::Question, [1004], [], 'h') => CSI::EnableFocusReporting,
+    //         (CsiMod::Question, [1004], [], 'l') => CSI::DisableFocusReporting,
 
-            (CsiMod::Question, [47], [], 'h') => CSI::RestoreScreen,
-            (CsiMod::Question, [47], [], 'l') => CSI::SaveScreen,
+    //         (CsiMod::Question, [47], [], 'h') => CSI::RestoreScreen,
+    //         (CsiMod::Question, [47], [], 'l') => CSI::SaveScreen,
 
-            (CsiMod::Question, [1049], [], 'h') => CSI::EnableAlternativeBuffer,
-            (CsiMod::Question, [1049], [], 'l') => CSI::DisableAlternativeBuffer,
+    //         (CsiMod::Question, [1049], [], 'h') => CSI::EnableAlternativeBuffer,
+    //         (CsiMod::Question, [1049], [], 'l') => CSI::DisableAlternativeBuffer,
 
-            (CsiMod::Standard, [], [], 'm') => CSI::SelectGraphicRendition(GraphicsRendition(&[0])),
-            (CsiMod::Standard, gr, [], 'm') => CSI::SelectGraphicRendition(GraphicsRendition(gr)),
+    //         (CsiMod::Standard, [], [], 'm') => CSI::SelectGraphicRendition(GraphicsRendition(&[0])),
+    //         (CsiMod::Standard, gr, [], 'm') => CSI::SelectGraphicRendition(GraphicsRendition(gr)),
 
-            (CsiMod::Standard, [top, bottom], [], 'r') => CSI::SetScrollingRegion {
-                top: *top,
-                bottom: *bottom,
-            },
+    //         (CsiMod::Standard, [top, bottom], [], 'r') => CSI::SetScrollingRegion {
+    //             top: *top,
+    //             bottom: *bottom,
+    //         },
 
-            (CsiMod::Question, [0], [], 'h') => CSI::ScreenMode(ScreenMode::Monochrome40x25),
-            (CsiMod::Question, [1], [], 'h') => CSI::ScreenMode(ScreenMode::Color40x25),
-            (CsiMod::Question, [2], [], 'h') => CSI::ScreenMode(ScreenMode::Monochrome80x25),
-            (CsiMod::Question, [3], [], 'h') => CSI::ScreenMode(ScreenMode::Color80x25),
-            (CsiMod::Question, [4], [], 'h') => CSI::ScreenMode(ScreenMode::Graphics4Color320x200),
-            (CsiMod::Question, [5], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::GraphicsMonochrome320x200)
-            }
-            (CsiMod::Question, [6], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::GraphicsMonochrome640x200)
-            }
-            (CsiMod::Question, [7], [], 'h') => CSI::ScreenMode(ScreenMode::EnableLineWrapping),
-            (CsiMod::Question, [13], [], 'h') => CSI::ScreenMode(ScreenMode::GraphicsColor320x200),
-            (CsiMod::Question, [14], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::Graphics16Color640x200)
-            }
-            (CsiMod::Question, [15], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::GraphicsMonochrome630x350)
-            }
-            (CsiMod::Question, [16], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::Graphics16Color640x350)
-            }
-            (CsiMod::Question, [17], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::GraphicsMonochrome640x480)
-            }
-            (CsiMod::Question, [18], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::Graphics16Color640x480)
-            }
-            (CsiMod::Question, [19], [], 'h') => {
-                CSI::ScreenMode(ScreenMode::Graphics256Color320x200)
-            }
+    //         (CsiMod::Question, [0], [], 'h') => CSI::ScreenMode(ScreenMode::Monochrome40x25),
+    //         (CsiMod::Question, [1], [], 'h') => CSI::ScreenMode(ScreenMode::Color40x25),
+    //         (CsiMod::Question, [2], [], 'h') => CSI::ScreenMode(ScreenMode::Monochrome80x25),
+    //         (CsiMod::Question, [3], [], 'h') => CSI::ScreenMode(ScreenMode::Color80x25),
+    //         (CsiMod::Question, [4], [], 'h') => CSI::ScreenMode(ScreenMode::Graphics4Color320x200),
+    //         (CsiMod::Question, [5], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::GraphicsMonochrome320x200)
+    //         }
+    //         (CsiMod::Question, [6], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::GraphicsMonochrome640x200)
+    //         }
+    //         (CsiMod::Question, [7], [], 'h') => CSI::ScreenMode(ScreenMode::EnableLineWrapping),
+    //         (CsiMod::Question, [13], [], 'h') => CSI::ScreenMode(ScreenMode::GraphicsColor320x200),
+    //         (CsiMod::Question, [14], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::Graphics16Color640x200)
+    //         }
+    //         (CsiMod::Question, [15], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::GraphicsMonochrome630x350)
+    //         }
+    //         (CsiMod::Question, [16], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::Graphics16Color640x350)
+    //         }
+    //         (CsiMod::Question, [17], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::GraphicsMonochrome640x480)
+    //         }
+    //         (CsiMod::Question, [18], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::Graphics16Color640x480)
+    //         }
+    //         (CsiMod::Question, [19], [], 'h') => {
+    //             CSI::ScreenMode(ScreenMode::Graphics256Color320x200)
+    //         }
 
-            (CsiMod::Question, [0], [], 'l') => CSI::ResetScreenMode(ScreenMode::Monochrome40x25),
-            (CsiMod::Question, [1], [], 'l') => CSI::ResetScreenMode(ScreenMode::Color40x25),
-            (CsiMod::Question, [2], [], 'l') => CSI::ResetScreenMode(ScreenMode::Monochrome80x25),
-            (CsiMod::Question, [3], [], 'l') => CSI::ResetScreenMode(ScreenMode::Color80x25),
-            (CsiMod::Question, [4], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::Graphics4Color320x200)
-            }
-            (CsiMod::Question, [5], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome320x200)
-            }
-            (CsiMod::Question, [6], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome640x200)
-            }
-            (CsiMod::Question, [7], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::EnableLineWrapping)
-            }
-            (CsiMod::Question, [12], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::StopBlinkingCursor)
-            }
-            (CsiMod::Question, [13], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::GraphicsColor320x200)
-            }
-            (CsiMod::Question, [14], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::Graphics16Color640x200)
-            }
-            (CsiMod::Question, [15], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome630x350)
-            }
-            (CsiMod::Question, [16], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::Graphics16Color640x350)
-            }
-            (CsiMod::Question, [17], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome640x480)
-            }
-            (CsiMod::Question, [18], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::Graphics16Color640x480)
-            }
-            (CsiMod::Question, [19], [], 'l') => {
-                CSI::ResetScreenMode(ScreenMode::Graphics256Color320x200)
-            }
+    //         (CsiMod::Question, [0], [], 'l') => CSI::ResetScreenMode(ScreenMode::Monochrome40x25),
+    //         (CsiMod::Question, [1], [], 'l') => CSI::ResetScreenMode(ScreenMode::Color40x25),
+    //         (CsiMod::Question, [2], [], 'l') => CSI::ResetScreenMode(ScreenMode::Monochrome80x25),
+    //         (CsiMod::Question, [3], [], 'l') => CSI::ResetScreenMode(ScreenMode::Color80x25),
+    //         (CsiMod::Question, [4], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::Graphics4Color320x200)
+    //         }
+    //         (CsiMod::Question, [5], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome320x200)
+    //         }
+    //         (CsiMod::Question, [6], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome640x200)
+    //         }
+    //         (CsiMod::Question, [7], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::EnableLineWrapping)
+    //         }
+    //         (CsiMod::Question, [12], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::StopBlinkingCursor)
+    //         }
+    //         (CsiMod::Question, [13], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::GraphicsColor320x200)
+    //         }
+    //         (CsiMod::Question, [14], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::Graphics16Color640x200)
+    //         }
+    //         (CsiMod::Question, [15], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome630x350)
+    //         }
+    //         (CsiMod::Question, [16], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::Graphics16Color640x350)
+    //         }
+    //         (CsiMod::Question, [17], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::GraphicsMonochrome640x480)
+    //         }
+    //         (CsiMod::Question, [18], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::Graphics16Color640x480)
+    //         }
+    //         (CsiMod::Question, [19], [], 'l') => {
+    //             CSI::ResetScreenMode(ScreenMode::Graphics256Color320x200)
+    //         }
 
-            (_, sequence, intermediate, end) => CSI::Unknown {
-                sequence,
-                intermediate,
-                // modifier,
-                end,
-            },
-        }
-    }
+    //         (_, sequence, intermediate, end) => CSI::Unknown {
+    //             sequence,
+    //             intermediate,
+    //             // modifier,
+    //             end,
+    //         },
+    //     }
+    // }
 }
