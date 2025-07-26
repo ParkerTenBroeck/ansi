@@ -21,6 +21,13 @@ enum StringKind {
     Os,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8)]
+enum CsiKind{
+    Public,
+    Private,
+}
+
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
 enum State {
@@ -249,7 +256,7 @@ impl UnsizedAnsiParser {
             27 => self.state = State::Ground,
             0x80..=0x9F if self.bit8_enabled => {
                 self.state = State::Escape;
-                input = input as u8 - 0x40;
+                input = input - 0x40;
             }
             _ => {}
         }
@@ -297,7 +304,7 @@ impl UnsizedAnsiParser {
             State::Escape => match input {
                 0x20..=0x2F => {
                     self.reset_byte_buffer();
-                    self.state = State::Nf(self.insert_into_byte_buffer(input as u8).is_err());
+                    self.state = State::Nf(self.insert_into_byte_buffer(input).is_err());
                     Out::None
                 }
                 0x30..=0x3F => {
@@ -426,12 +433,12 @@ impl UnsizedAnsiParser {
             },
             State::Nf(err) => match input {
                 0x20..=0x2f => {
-                    self.state = State::Nf(self.insert_into_byte_buffer(input as u8).is_err());
+                    self.state = State::Nf(self.insert_into_byte_buffer(input).is_err());
                     Out::None
                 }
                 0x30..=0x7E => {
                     self.state = State::Ground;
-                    if err && self.insert_into_byte_buffer(input as u8).is_err() && !self.nf_silent_sequence_overflow{
+                    if err && self.insert_into_byte_buffer(input).is_err() && !self.nf_silent_sequence_overflow{
                         Out::Ansi(Ansi::C1(C1::nF(nF::SequenceTooLarge)))
                     }else{
                         Out::Ansi(Ansi::C1(C1::nF(nF::Unknown(
@@ -445,13 +452,29 @@ impl UnsizedAnsiParser {
                 }
             },
             State::CsiP => match input {
+                // 0x30..=0x3F => {
+                    
+                //     Out::None
+                // }
+                // 0x20..=0x2F => {}
+                // 0x40..=0x7F => {
+                //     self.state = State::Ground;
+                //     Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Public(self.current_byte_buffer())))))
+                // }
+                // _ => {
+
+                // }
                 _ => todo!(),
             },
             State::CsiI => match input {
                 _ => todo!(),
             },
             State::CsiIgnore => match input {
-                _ => todo!(),
+                0x40..=0x7F => {
+                    self.state = State::Ground;
+                    Out::None
+                }
+                _ => Out::None
             },
             // State::Csi(CsiStatus::Ignore) => match input{
             //     _ => todo!()
