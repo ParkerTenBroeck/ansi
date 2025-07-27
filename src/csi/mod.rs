@@ -3,24 +3,19 @@ mod parser;
 pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Number {
-    PublicNone,
-    Public(u16),
-    PrivateNone,
-    Private(u16),
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CSI<'a> {
-    Public(&'a [u8]),
-    Private(&'a [u8]),
+    Sequence(&'a [u8]),
 
     SequenceTooLarge,
     IntermediateOverflow,
 }
 
+pub struct CSIParser<'a>{
+    data: &'a [u8],
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum CSI_<'a> {
+pub enum ParsedCSI<'a> {
     CursorUp(u16),
     CursorDown(u16),
     CursorLeft(u16),
@@ -78,16 +73,12 @@ pub enum CSI_<'a> {
     },
     DeleteLines(u16),
     InsertLines(u16),
+    
     /// CSI r ; c R
     ReportCursorPosition,
     CursorLineAbsolute(u16),
 
-    Unknown {
-        sequence: &'a [u16],
-        intermediate: &'a [u8],
-        // modifier: CsiMod,
-        end: char,
-    },
+    Unknown(&'a [CSIPart]),
     ReportedCursorPosition {
         row: u16,
         col: u16,

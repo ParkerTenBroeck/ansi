@@ -155,7 +155,54 @@ impl<'a> Iterator for GraphicsRendition<'a> {
     }
 }
 
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8, C)]
+pub enum CSIPart{
+    PublicNone = 0,
+    Public(u16),
+    PrivateNone,
+    Private(u16),
+
+    Question,
+    Eq,
+    Gt,
+    Lt,
+
+    Immediate(u8),
+    Final(u8)
+}
+
+#[repr(C)]
+pub struct CSIParser<'a, T: ?Sized>(&'a [u8], T);
+
+impl<'a, const MAX: usize> CSIParser<'a, [CSIPart; MAX]>{
+    pub fn parse(&mut self) -> &[CSIPart]{
+        let coerced: &mut CSIParser<'a, [CSIPart]> = self;
+        coerced.parse()
+    }
+}
+
+impl<'a> CSIParser<'a, [CSIPart]>{
+    pub fn parse(&mut self) -> &[CSIPart]{
+        let mut index = 0;
+
+        for byte in self.0{
+            
+        }
+
+        &self.1
+    }
+}
+
 impl<'a> CSI<'a> {
+    pub fn parser<const MAX: usize>(self) -> CSIParser<'a, [CSIPart; MAX]>{
+        match self{
+            CSI::Sequence(items) => CSIParser(items, [CSIPart::PublicNone; MAX]),
+            CSI::SequenceTooLarge => CSIParser(&[], [CSIPart::PublicNone; MAX]),
+            CSI::IntermediateOverflow => CSIParser(&[], [CSIPart::PublicNone; MAX]),
+        }
+    }
     // pub fn parse(csi_mod: CsiMod, params: &'a [u16], intermediates: &'a [u8], last: char) -> Self {
     //     match (csi_mod, params, intermediates, last) {
     //         (CsiMod::Standard, [line, col], [], 'f') => CSI::HorizontalVerticalPosition {

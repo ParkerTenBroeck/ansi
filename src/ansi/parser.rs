@@ -21,13 +21,6 @@ enum StringKind {
     Os,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(u8)]
-enum CsiKind{
-    Public,
-    Private,
-}
-
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
 enum State {
@@ -232,6 +225,28 @@ impl UnsizedAnsiParser {
         Utf8Result::Pass
     }
 
+    fn push_p(&mut self, input: u8) {
+        if self.insert_into_byte_buffer(input).is_err(){
+            todo!()
+        }
+    }
+
+    fn push_i(&mut self, input: u8) {
+        if self.insert_into_byte_buffer(input).is_err(){
+            todo!()
+        }
+    }
+
+    fn push_f(&mut self, input: u8) {
+        if self.insert_into_byte_buffer(input).is_err(){
+            todo!()
+        }
+    }
+
+    fn finish_csi(&mut self) -> Out{
+        Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Sequence(self.current_byte_buffer())))))
+    }
+
     pub fn next(&mut self, mut input: u8) -> Out {
         if self.utf8 | self.utf8_strings {
             match self.next_utf8(input) {
@@ -256,7 +271,7 @@ impl UnsizedAnsiParser {
             27 => self.state = State::Ground,
             0x80..=0x9F if self.bit8_enabled => {
                 self.state = State::Escape;
-                input = input - 0x40;
+                input -= 0x40;
             }
             _ => {}
         }
@@ -452,22 +467,43 @@ impl UnsizedAnsiParser {
                 }
             },
             State::CsiP => match input {
-                // 0x30..=0x3F => {
-                    
-                //     Out::None
-                // }
-                // 0x20..=0x2F => {}
-                // 0x40..=0x7F => {
-                //     self.state = State::Ground;
-                //     Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Public(self.current_byte_buffer())))))
-                // }
-                // _ => {
-
-                // }
-                _ => todo!(),
+                0x30..=0x3F => {
+                    self.push_p(input);
+                    Out::None
+                }
+                0x20..=0x2F => {
+                    self.state = State::CsiI;
+                    self.push_i(input);
+                    Out::None
+                }
+                0x40..=0x7F => {
+                    self.state = State::Ground;
+                    self.push_f(input);
+                    self.finish_csi()
+                }
+                _ => {
+                    self.state = State::CsiIgnore;
+                    Out::None
+                }
             },
             State::CsiI => match input {
-                _ => todo!(),
+                0x30..=0x3F => {
+                    self.state = State::CsiIgnore;
+                    Out::None
+                }
+                0x20..=0x2F => {
+                    self.push_i(input);
+                    Out::None
+                }
+                0x40..=0x7F => {
+                    self.state = State::Ground;
+                    self.push_f(input);
+                    self.finish_csi()
+                }
+                _ => {
+                    self.state = State::CsiIgnore;
+                    Out::None
+                }
             },
             State::CsiIgnore => match input {
                 0x40..=0x7F => {
@@ -476,93 +512,6 @@ impl UnsizedAnsiParser {
                 }
                 _ => Out::None
             },
-            // State::Csi(CsiStatus::Ignore) => match input{
-            //     _ => todo!()
-            // }
-            // State::Csi(_) => match input {
-            //     '\x20'..='\x2f' => {
-            //         if self.insert_into_byte_buffer(input as u8).is_err(){
-            //             self.state = State::Csi(CsiStatus::IntermediateOverflow);
-            //         }
-
-            //         self.state = State::CsiIntermediate;
-            //         Out::None
-            //     }
-            //     '0'..='9' | '\x3a'..='\x3f' if self.state == State::CsiIntermediate => {
-            //         self.state = State::Csi(CsiStatus::Ignore);
-            //         Out::None
-            //     }
-            //     // d @ '0'..='9' => {
-            //     //     if self.csi_param_count == 0 {
-            //     //         self.csi_param_count = 1;
-            //     //     }
-            //     //     if let Some(v) = self.csi_params.get_mut(self.csi_param_count as usize - 1)
-            //     //     {
-            //     //         if let Some(nv) = v
-            //     //             .checked_mul(10)
-            //     //             .and_then(|v| v.checked_add((d as u8 - b'0') as u16))
-            //     //         {
-            //     //             *v = nv;
-            //     //         } else {
-            //     //             *v = v.wrapping_mul(10).wrapping_add((d as u8 - b'0') as u16);
-            //     //             if self.csi_status != CsiStatus::Ignore {
-            //     //                 self.csi_status = CsiStatus::IntegerOverflow;
-            //     //             }
-            //     //         }
-            //     //     } else if self.csi_status != CsiStatus::Ignore {
-            //     //         self.csi_status = CsiStatus::SequenceTooLarge;
-            //     //     }
-            //     //     Out::None
-            //     // }
-            //     '\x3a' | '\x3c'..='\x3f' => {
-            //         self.csi_status = CsiStatus::Ignore;
-            //         Out::None
-            //     }
-            //     ';' => {
-            //         if let Some(next) = self.csi_param_count.checked_add(1) {
-            //             self.csi_param_count = next;
-            //             if let Some(next) =
-            //                 self.csi_params.get_mut(self.csi_param_count as usize)
-            //             {
-            //                 *next = 0;
-            //             } else if self.csi_status != CsiStatus::Ignore {
-            //                 self.csi_status = CsiStatus::SequenceTooLarge;
-            //             }
-            //         } else if self.csi_status != CsiStatus::Ignore {
-            //             self.csi_status = CsiStatus::SequenceTooLarge;
-            //         }
-            //         Out::None
-            //     }
-            //     '\x7f' => Out::None,
-
-            //     c @ '\x40'..='\x7E' => {
-            //         self.state = State::Default;
-            //         match self.csi_status {
-            //             CsiStatus::Ignore => Out::None,
-            //             CsiStatus::IntegerOverflow if !self.csi_silent_integer_overflow => {
-            //                 Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::IntegerOverflow))))
-            //             }
-            //             CsiStatus::SequenceTooLarge if !self.csi_silent_sequence_overflow => {
-            //                 Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::SequenceTooLarge))))
-            //             }
-            //             CsiStatus::IntermediateOverflow
-            //                 if !self.csi_silent_intermediate_overflow =>
-            //             {
-            //                 Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::IntermediateOverflow))))
-            //             }
-            //             _ => Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Public(
-            //                 &self.csi_params[..self.csi_param_count as usize],
-            //                 self.current_byte_buffer(),
-            //                 c,
-            //             ))))),
-            //         }
-            //     }
-            //     '\x00'..='\x17' | '\x19' | '\x1C'..='\x1F' => self.parse_safe_c0(input),
-            //     _ => {
-            //         self.csi_status = CsiStatus::Ignore;
-            //         Out::None
-            //     }
-            // },
             State::String(kind) => match input {
                 0x00..=0x17 | 0x19 | 0x1C..=0x1F => {
                     if self.string_pass_through_c0 {
