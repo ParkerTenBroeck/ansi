@@ -1,5 +1,5 @@
-use crate::ansi::*;
 use crate::csi::CSI;
+use crate::{CSIParser, ansi::*};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CsiMod {
@@ -226,25 +226,27 @@ impl UnsizedAnsiParser {
     }
 
     fn push_p(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err(){
+        if self.insert_into_byte_buffer(input).is_err() {
             todo!()
         }
     }
 
     fn push_i(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err(){
+        if self.insert_into_byte_buffer(input).is_err() {
             todo!()
         }
     }
 
     fn push_f(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err(){
+        if self.insert_into_byte_buffer(input).is_err() {
             todo!()
         }
     }
 
-    fn finish_csi(&mut self) -> Out{
-        Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Sequence(self.current_byte_buffer())))))
+    fn finish_csi(&mut self) -> Out {
+        Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Sequence(CSIParser::new(
+            self.current_byte_buffer(),
+        ))))))
     }
 
     pub fn next(&mut self, mut input: u8) -> Out {
@@ -453,12 +455,13 @@ impl UnsizedAnsiParser {
                 }
                 0x30..=0x7E => {
                     self.state = State::Ground;
-                    if err && self.insert_into_byte_buffer(input).is_err() && !self.nf_silent_sequence_overflow{
+                    if err
+                        && self.insert_into_byte_buffer(input).is_err()
+                        && !self.nf_silent_sequence_overflow
+                    {
                         Out::Ansi(Ansi::C1(C1::nF(nF::SequenceTooLarge)))
-                    }else{
-                        Out::Ansi(Ansi::C1(C1::nF(nF::Unknown(
-                            self.current_byte_buffer()
-                        ))))
+                    } else {
+                        Out::Ansi(Ansi::C1(C1::nF(nF::Unknown(self.current_byte_buffer()))))
                     }
                 }
                 _ => {
@@ -476,7 +479,7 @@ impl UnsizedAnsiParser {
                     self.push_i(input);
                     Out::None
                 }
-                0x40..=0x7F => {
+                0x40..=0x7E => {
                     self.state = State::Ground;
                     self.push_f(input);
                     self.finish_csi()
@@ -495,7 +498,7 @@ impl UnsizedAnsiParser {
                     self.push_i(input);
                     Out::None
                 }
-                0x40..=0x7F => {
+                0x40..=0x7E => {
                     self.state = State::Ground;
                     self.push_f(input);
                     self.finish_csi()
@@ -506,11 +509,11 @@ impl UnsizedAnsiParser {
                 }
             },
             State::CsiIgnore => match input {
-                0x40..=0x7F => {
+                0x40..=0x7E => {
                     self.state = State::Ground;
                     Out::None
                 }
-                _ => Out::None
+                _ => Out::None,
             },
             State::String(kind) => match input {
                 0x00..=0x17 | 0x19 | 0x1C..=0x1F => {
