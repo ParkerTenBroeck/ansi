@@ -24,18 +24,22 @@ enum CSIParserState {
 pub struct CSIParser<'a>(&'a [u8], CSIParserState);
 
 impl<'a> CSIParser<'a> {
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn new(input: &'a [u8]) -> Self {
         Self(input, CSIParserState::Start)
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn peek_first(&self) -> Option<u8> {
         self.0.first().copied()
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn peek_last(&self) -> Option<u8> {
         self.0.last().copied()
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn pop_front(&mut self) -> Option<u8> {
         match self.0 {
             [v, r @ ..] => {
@@ -46,6 +50,7 @@ impl<'a> CSIParser<'a> {
         }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn pop_back(&mut self) -> Option<u8> {
         match self.0 {
             [r @ .., v] => {
@@ -56,6 +61,7 @@ impl<'a> CSIParser<'a> {
         }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn special_first(&mut self) -> Option<u8> {
         if matches!(self.peek_first()?, b'?' | b'>' | b'<' | b'=') {
             return self.pop_front();
@@ -63,6 +69,7 @@ impl<'a> CSIParser<'a> {
         None
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn final_identifier(&mut self) -> Option<u8> {
         if matches!(self.peek_last()?, 0x40..=0x7E) {
             return self.pop_back();
@@ -70,6 +77,7 @@ impl<'a> CSIParser<'a> {
         None
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn parse_params<const N: usize>(&mut self, default: [u16; N]) -> Option<[u16; N]> {
         let mut result = [0; N];
         let mut fail = false;
@@ -93,6 +101,7 @@ impl<'a> CSIParser<'a> {
         Some(result)
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn parse_sub_params<const N: usize>(&mut self, default: [u16; N]) -> Option<[u16; N]> {
         let mut result = [0; N];
         for i in 0..N {
@@ -110,6 +119,7 @@ impl<'a> CSIParser<'a> {
         Some(result)
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn peek(&mut self) -> Option<CSIPart> {
         let mut copy = *self;
         copy.next()
@@ -119,6 +129,7 @@ impl<'a> CSIParser<'a> {
 impl<'a> Iterator for CSIParser<'a> {
     type Item = CSIPart;
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 == CSIParserState::Start {
             self.1 = CSIParserState::Middle;

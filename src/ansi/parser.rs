@@ -22,6 +22,15 @@ enum StringKind {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+enum IgnoreKind {
+    #[default]
+    Regular,
+    SequenceOverflow,
+    ImmediateOverflow,
+    Invalid,
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
 enum State {
     #[default]
@@ -30,7 +39,7 @@ enum State {
 
     CsiP,
     CsiI,
-    CsiIgnore,
+    CsiIgnore(IgnoreKind),
 
     String(StringKind),
 
@@ -47,7 +56,6 @@ pub struct AnsiParser<T: ?Sized> {
     pub del_special: bool,
     pub space_special: bool,
 
-    pub csi_silent_integer_overflow: bool,
     pub csi_silent_sequence_overflow: bool,
     pub csi_silent_intermediate_overflow: bool,
     pub csi_pass_through_c0: bool,
@@ -58,6 +66,9 @@ pub struct AnsiParser<T: ?Sized> {
 
     pub string_pass_through_c0: bool,
     pub utf8_strings: bool,
+
+    pub max_immediate_count: usize,
+    immediate_count: usize,
 
     state: State,
     utf8_state: u8,
@@ -80,7 +91,6 @@ impl<const BYTE_BUF_SIZE: usize> SizedAnsiParser<BYTE_BUF_SIZE> {
             del_special: true,
             space_special: true,
 
-            csi_silent_integer_overflow: true,
             csi_silent_sequence_overflow: true,
             csi_silent_intermediate_overflow: true,
             csi_pass_through_c0: true,
@@ -89,6 +99,9 @@ impl<const BYTE_BUF_SIZE: usize> SizedAnsiParser<BYTE_BUF_SIZE> {
             nf_silent_sequence_overflow: true,
             utf8: true,
             utf8_strings: true,
+
+            max_immediate_count: 4,
+            immediate_count: 0,
 
             state: State::Ground,
             utf8_state: 0,
@@ -121,19 +134,27 @@ enum Utf8Result {
 }
 
 impl UnsizedAnsiParser {
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn reset(&mut self) {
         self.state = State::Ground;
         self.byte_buffer_count = 0;
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn reset_byte_buffer(&mut self) {
         self.byte_buffer_count = 0;
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn current_byte_buffer(&self) -> &[u8] {
-        &self.byte_buffer[..self.byte_buffer_count]
+        if self.byte_buffer_count > self.byte_buffer.len() {
+            &self.byte_buffer[..]
+        } else {
+            &self.byte_buffer[..self.byte_buffer_count]
+        }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn insert_into_byte_buffer(&mut self, input: u8) -> Result<(), ()> {
         if let Some(e) = self.byte_buffer.get_mut(self.byte_buffer_count) {
             *e = input;
@@ -148,6 +169,7 @@ impl UnsizedAnsiParser {
         }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn parse_safe_c0(&mut self, input: u8) -> Out {
         Out::Ansi(Ansi::C0(match input {
             0 => C0::NUL,
@@ -182,10 +204,11 @@ impl UnsizedAnsiParser {
             29 => C0::GS,
             30 => C0::RS,
             31 => C0::US,
-            _ => unreachable!(),
+            _ => return Out::None,
         }))
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn next_utf8(&mut self, input: u8) -> Utf8Result {
         match self.state {
             State::Ground if self.utf8 => {}
@@ -194,7 +217,7 @@ impl UnsizedAnsiParser {
         }
         if self.utf8_state != 0 {
             if input & 0b11000000 == 0b10000000 {
-                self.codepoint <<= 6;
+                self.codepoint = self.codepoint.wrapping_shl(6);
                 self.codepoint |= input as u32 & !0b11000000;
                 self.utf8_state -= 1;
 
@@ -225,30 +248,59 @@ impl UnsizedAnsiParser {
         Utf8Result::Pass
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn push_p(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err() {
-            todo!()
+        if self.insert_into_byte_buffer(input).is_err() && !self.csi_silent_sequence_overflow {
+            self.state = State::CsiIgnore(IgnoreKind::SequenceOverflow);
         }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
+    fn shift_immediates_push(&mut self, input: u8) {
+        let mut position = self.byte_buffer.len().saturating_sub(self.immediate_count);
+        while let (Some(v), Some(p)) = (
+            self.byte_buffer.get(position.wrapping_add(1)).copied(),
+            self.byte_buffer.get_mut(position),
+        ) {
+            *p = v;
+            position += 1;
+        }
+        if let Some(last) = self.byte_buffer.last_mut() {
+            *last = input
+        }
+    }
+
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn push_i(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err() {
-            todo!()
+        if self.immediate_count == self.max_immediate_count {
+            self.state = State::CsiIgnore(IgnoreKind::ImmediateOverflow);
+            return;
         }
+        if self.insert_into_byte_buffer(input).is_err() {
+            if !self.csi_silent_sequence_overflow {
+                self.state = State::CsiIgnore(IgnoreKind::SequenceOverflow);
+                return;
+            }
+            self.shift_immediates_push(input);
+        }
+        self.immediate_count = self.immediate_count.wrapping_add(1);
     }
 
-    fn push_f(&mut self, input: u8) {
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
+    fn push_f(&mut self, input: u8) -> Out {
         if self.insert_into_byte_buffer(input).is_err() {
-            todo!()
+            if !self.csi_silent_sequence_overflow {
+                return Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::SequenceTooLarge))));
+            }
+            self.shift_immediates_push(input);
         }
-    }
 
-    fn finish_csi(&mut self) -> Out {
         Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::Sequence(
             CSIParser::new(self.current_byte_buffer()),
         )))))
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn next(&mut self, mut input: u8) -> Out {
         if self.utf8 | self.utf8_strings {
             match self.next_utf8(input) {
@@ -475,23 +527,23 @@ impl UnsizedAnsiParser {
                     Out::None
                 }
                 0x20..=0x2F => {
+                    self.immediate_count = 0;
                     self.state = State::CsiI;
                     self.push_i(input);
                     Out::None
                 }
                 0x40..=0x7E => {
                     self.state = State::Ground;
-                    self.push_f(input);
-                    self.finish_csi()
+                    self.push_f(input)
                 }
                 _ => {
-                    self.state = State::CsiIgnore;
+                    self.state = State::CsiIgnore(IgnoreKind::Regular);
                     Out::None
                 }
             },
             State::CsiI => match input {
                 0x30..=0x3F => {
-                    self.state = State::CsiIgnore;
+                    self.state = State::CsiIgnore(IgnoreKind::Invalid);
                     Out::None
                 }
                 0x20..=0x2F => {
@@ -500,18 +552,26 @@ impl UnsizedAnsiParser {
                 }
                 0x40..=0x7E => {
                     self.state = State::Ground;
-                    self.push_f(input);
-                    self.finish_csi()
+                    self.push_f(input)
                 }
                 _ => {
-                    self.state = State::CsiIgnore;
+                    self.state = State::CsiIgnore(IgnoreKind::Regular);
                     Out::None
                 }
             },
-            State::CsiIgnore => match input {
+            State::CsiIgnore(kind) => match input {
                 0x40..=0x7E => {
                     self.state = State::Ground;
-                    Out::None
+                    match kind {
+                        IgnoreKind::Regular => Out::None,
+                        IgnoreKind::SequenceOverflow => {
+                            Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::SequenceTooLarge))))
+                        }
+                        IgnoreKind::ImmediateOverflow => {
+                            Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::IntermediateOverflow))))
+                        }
+                        IgnoreKind::Invalid => Out::None,
+                    }
                 }
                 _ => Out::None,
             },

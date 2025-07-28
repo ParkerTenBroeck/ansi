@@ -89,6 +89,7 @@ impl<'a> core::fmt::Debug for GraphicsRendition<'a> {
 }
 
 impl<'a> GraphicsRendition<'a> {
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn parse_color(
         &mut self,
         val: u16,
@@ -183,6 +184,7 @@ impl<'a> GraphicsRendition<'a> {
 impl<'a> Iterator for GraphicsRendition<'a> {
     type Item = SelectGraphic;
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn next(&mut self) -> Option<Self::Item> {
         match self.0.next()? {
             CSIPart::Param(None) => Some(SelectGraphic::Reset),

@@ -96,6 +96,7 @@ pub enum ScreenMode {
 }
 
 impl<'a> CSIParser<'a> {
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn parse(&mut self) -> CSI<'a> {
         let copy = *self;
         if let Some(p) = self.parse_() {
@@ -105,6 +106,7 @@ impl<'a> CSIParser<'a> {
         }
     }
 
+    #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn parse_(&mut self) -> Option<CSI<'a>> {
         let copy = *self;
         let csi = match (self.special_first(), self.final_identifier()) {
