@@ -212,7 +212,7 @@ impl<'a> CSIParser<'a> {
             _ => None?,
         };
         if self.next().is_some() {
-            return Some(CSI::Unknown(copy));
+            Some(CSI::Unknown(copy))
         } else {
             Some(csi)
         }

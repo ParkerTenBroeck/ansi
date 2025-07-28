@@ -29,11 +29,11 @@ impl<'a> CSIParser<'a> {
     }
 
     fn peek_first(&self) -> Option<u8> {
-        self.0.get(0).copied()
+        self.0.first().copied()
     }
 
     fn peek_last(&self) -> Option<u8> {
-        self.0.get(self.0.len().wrapping_sub(1)).copied()
+        self.0.last().copied()
     }
 
     fn pop_front(&mut self) -> Option<u8> {
@@ -120,48 +120,46 @@ impl<'a> Iterator for CSIParser<'a> {
     type Item = CSIPart;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.1 == CSIParserState::Start {
-                self.1 = CSIParserState::Middle;
-                if matches!(self.peek_first(), None | Some(0x20..=0x2F|0x40..=0x7E|b':'|b';')) {
-                    return Some(CSIPart::Param(None));
-                }
+        if self.1 == CSIParserState::Start {
+            self.1 = CSIParserState::Middle;
+            if matches!(self.peek_first(), None | Some(0x20..=0x2F|0x40..=0x7E|b':'|b';')) {
+                return Some(CSIPart::Param(None));
             }
-            let mut value = None;
-            let sub;
-            match self.pop_front() {
-                Some(b'?') => return Some(CSIPart::Question),
-                Some(b'=') => return Some(CSIPart::Eq),
-                Some(b'>') => return Some(CSIPart::Gt),
-                Some(b'<') => return Some(CSIPart::Lt),
-                Some(v @ 0x20..=0x2F) => return Some(CSIPart::Intermediate(v)),
-                Some(v @ 0x40..=0x7E) => return Some(CSIPart::Final(v)),
-                Some(b':') => {
-                    sub = true;
-                }
-                Some(b';') => {
-                    sub = false;
-                }
-                Some(v @ b'0'..=b'9') => {
-                    sub = false;
-                    value = Some((v - b'0') as u16);
-                }
-                _ => return None,
+        }
+        let mut value = None;
+        let sub;
+        match self.pop_front() {
+            Some(b'?') => return Some(CSIPart::Question),
+            Some(b'=') => return Some(CSIPart::Eq),
+            Some(b'>') => return Some(CSIPart::Gt),
+            Some(b'<') => return Some(CSIPart::Lt),
+            Some(v @ 0x20..=0x2F) => return Some(CSIPart::Intermediate(v)),
+            Some(v @ 0x40..=0x7E) => return Some(CSIPart::Final(v)),
+            Some(b':') => {
+                sub = true;
             }
-            while let Some(v @ b'0'..=b'9') = self.peek_first() {
-                self.pop_front();
-                let d = (v - b'0') as u16;
-                if let Some(v) = value {
-                    value = Some(v.wrapping_mul(10).wrapping_add(d))
-                } else {
-                    value = Some(d);
-                }
+            Some(b';') => {
+                sub = false;
             }
-            if sub {
-                return Some(CSIPart::SubParam(value));
+            Some(v @ b'0'..=b'9') => {
+                sub = false;
+                value = Some((v - b'0') as u16);
+            }
+            _ => return None,
+        }
+        while let Some(v @ b'0'..=b'9') = self.peek_first() {
+            self.pop_front();
+            let d = (v - b'0') as u16;
+            if let Some(v) = value {
+                value = Some(v.wrapping_mul(10).wrapping_add(d))
             } else {
-                return Some(CSIPart::Param(value));
+                value = Some(d);
             }
+        }
+        if sub {
+            Some(CSIPart::SubParam(value))
+        } else {
+            Some(CSIPart::Param(value))
         }
     }
 }
