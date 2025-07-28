@@ -138,7 +138,7 @@ impl<'a> CSIParser<'a> {
             (None, Some(b'L')) => CSI::InsertLines(self.parse_params([1])?[0]),
             (None, Some(b'M')) => CSI::DeleteLines(self.parse_params([1])?[0]),
             (None, Some(b'S')) => CSI::ScrollUp(self.parse_params([1])?[0]),
-            (None, Some(b'T')) => CSI::ScrollUp(self.parse_params([1])?[0]),
+            (None, Some(b'T')) => CSI::ScrollDown(self.parse_params([1])?[0]),
 
             (None, Some(b'f')) => {
                 let [row, col] = self.parse_params([1, 1])?;
@@ -213,10 +213,10 @@ impl<'a> CSIParser<'a> {
 
             _ => None?,
         };
-        if self.next().is_some() {
-            Some(CSI::Unknown(copy))
-        } else {
+        if self.empty() {
             Some(csi)
+        } else {
+            return Some(CSI::Unknown(copy));
         }
     }
 }

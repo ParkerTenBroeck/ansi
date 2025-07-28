@@ -120,9 +120,13 @@ impl<'a> CSIParser<'a> {
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
-    fn peek(&mut self) -> Option<CSIPart> {
+    fn peek(&self) -> Option<CSIPart> {
         let mut copy = *self;
         copy.next()
+    }
+
+    pub fn empty(&self) -> bool {
+        self.0.is_empty() || self.peek().is_none()
     }
 }
 
@@ -132,9 +136,11 @@ impl<'a> Iterator for CSIParser<'a> {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.1 == CSIParserState::Start {
-            self.1 = CSIParserState::Middle;
             if matches!(self.peek_first(), None | Some(0x20..=0x2F|0x40..=0x7E|b':'|b';')) {
+                self.1 = CSIParserState::Middle;
                 return Some(CSIPart::Param(None));
+            }else if matches!(self.peek_first(), Some(b'0'..=b'9')){
+                self.1 = CSIParserState::Middle;
             }
         }
         let mut value = None;

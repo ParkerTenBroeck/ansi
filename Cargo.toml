@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["no_panic"]
+default = []
 no_panic = ["no-panic"]
 
 [dependencies]
