@@ -1,4 +1,4 @@
-use crate::csi::CSI;
+use crate::csi::CSIResult;
 use crate::{CSIParser, ansi::*};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -244,9 +244,9 @@ impl UnsizedAnsiParser {
     }
 
     fn finish_csi(&mut self) -> Out {
-        Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSI::Sequence(CSIParser::new(
-            self.current_byte_buffer(),
-        ))))))
+        Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::Sequence(
+            CSIParser::new(self.current_byte_buffer()),
+        )))))
     }
 
     pub fn next(&mut self, mut input: u8) -> Out {

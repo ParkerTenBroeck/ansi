@@ -8,7 +8,7 @@ pub use known::*;
 pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum CSI<'a> {
+pub enum CSIResult<'a> {
     Sequence(CSIParser<'a>),
 
     SequenceTooLarge,

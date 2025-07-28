@@ -207,7 +207,7 @@ pub enum Fe<'a> {
     /// 'Z' Single Character Introducer
     SCI = b'Z',
     /// '[' Control Sequence Introducer [CSI]
-    CSI(crate::csi::CSI<'a>) = b'[',
+    CSI(crate::csi::CSIResult<'a>) = b'[',
     /// '\' String Terminator
     ST = b'\\',
     /// ']' Operating System Command
