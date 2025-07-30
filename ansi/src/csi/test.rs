@@ -166,7 +166,7 @@ fn csi_parser_invalid_byte() {
 }
 
 #[cfg(test)]
-fn expect_csi(bytes: &[u8], expected: crate::CSI) {
+fn expect_csi(bytes: &[u8], expected: crate::KnownCSI) {
     let mut parser = crate::CSIParser::new(bytes);
     assert_eq!(parser.parse(), expected)
 }
@@ -175,7 +175,7 @@ fn expect_csi(bytes: &[u8], expected: crate::CSI) {
 fn expect_csi_params<const N: usize>(
     defaults: [u16; N],
     f: u8,
-    func: impl Fn([u16; N]) -> crate::CSI<'static>,
+    func: impl Fn([u16; N]) -> crate::KnownCSI<'static>,
 ) {
     let mut string = std::string::String::new();
     string.push(f as char);
@@ -240,7 +240,7 @@ fn private_sequences() {
         let bytes = format!("?{mode}h");
         let mut parser = crate::CSIParser::new(bytes.as_bytes());
         match parser.parse() {
-            crate::CSI::ScreenMode(sm) if sm as i32 == mode => {}
+            crate::KnownCSI::ScreenMode(sm) if sm as i32 == mode => {}
             wrong => panic!("{wrong:?}"),
         }
     }
@@ -249,93 +249,107 @@ fn private_sequences() {
         let bytes = format!("?{mode}l");
         let mut parser = crate::CSIParser::new(bytes.as_bytes());
         match parser.parse() {
-            crate::CSI::ResetScreenMode(sm) if sm as i32 == mode => {}
+            crate::KnownCSI::ResetScreenMode(sm) if sm as i32 == mode => {}
             wrong => panic!("{wrong:?}"),
         }
     }
 
-    expect_csi(b"?25h", crate::CSI::ShowCursor);
-    expect_csi(b"?25l", crate::CSI::HideCursor);
+    expect_csi(b"?25h", crate::KnownCSI::ShowCursor);
+    expect_csi(b"?25l", crate::KnownCSI::HideCursor);
 
-    expect_csi(b"?1004h", crate::CSI::EnableFocusReporting);
-    expect_csi(b"?1004l", crate::CSI::DisableFocusReporting);
+    expect_csi(b"?1004h", crate::KnownCSI::EnableFocusReporting);
+    expect_csi(b"?1004l", crate::KnownCSI::DisableFocusReporting);
 
-    expect_csi(b"?1049h", crate::CSI::EnableAlternativeBuffer);
-    expect_csi(b"?1049l", crate::CSI::DisableAlternativeBuffer);
+    expect_csi(b"?1049h", crate::KnownCSI::EnableAlternativeBuffer);
+    expect_csi(b"?1049l", crate::KnownCSI::DisableAlternativeBuffer);
 
-    expect_csi(b"?2004h", crate::CSI::EnableBracketPastingMode);
-    expect_csi(b"?2004l", crate::CSI::DisableBracketPastingMode);
+    expect_csi(b"?2004h", crate::KnownCSI::EnableBracketPastingMode);
+    expect_csi(b"?2004l", crate::KnownCSI::DisableBracketPastingMode);
 }
 
 #[test]
 fn param_val_sequences() {
-    expect_csi_params([1], b'A', |[v]| crate::CSI::CursorUp(v));
-    expect_csi_params([1], b'B', |[v]| crate::CSI::CursorDown(v));
-    expect_csi_params([1], b'C', |[v]| crate::CSI::CursorRight(v));
-    expect_csi_params([1], b'D', |[v]| crate::CSI::CursorLeft(v));
-    expect_csi_params([1], b'E', |[v]| crate::CSI::CursorNextLine(v));
-    expect_csi_params([1], b'F', |[v]| crate::CSI::CursorPreviousLine(v));
-    expect_csi_params([1], b'G', |[v]| crate::CSI::CursorHorizontalAbsolute(v));
-    expect_csi_params([1, 1], b'H', |[row, col]| crate::CSI::CursorTo { row, col });
+    expect_csi_params([1], b'A', |[v]| crate::KnownCSI::CursorUp(v));
+    expect_csi_params([1], b'B', |[v]| crate::KnownCSI::CursorDown(v));
+    expect_csi_params([1], b'C', |[v]| crate::KnownCSI::CursorRight(v));
+    expect_csi_params([1], b'D', |[v]| crate::KnownCSI::CursorLeft(v));
+    expect_csi_params([1], b'E', |[v]| crate::KnownCSI::CursorNextLine(v));
+    expect_csi_params([1], b'F', |[v]| crate::KnownCSI::CursorPreviousLine(v));
+    expect_csi_params([1], b'G', |[v]| {
+        crate::KnownCSI::CursorHorizontalAbsolute(v)
+    });
+    expect_csi_params([1, 1], b'H', |[row, col]| crate::KnownCSI::CursorTo {
+        row,
+        col,
+    });
 
-    expect_csi_params([1], b'L', |[v]| crate::CSI::InsertLines(v));
-    expect_csi_params([1], b'M', |[v]| crate::CSI::DeleteLines(v));
-    expect_csi_params([1], b'S', |[v]| crate::CSI::ScrollUp(v));
-    expect_csi_params([1], b'T', |[v]| crate::CSI::ScrollDown(v));
+    expect_csi_params([1], b'L', |[v]| crate::KnownCSI::InsertLines(v));
+    expect_csi_params([1], b'M', |[v]| crate::KnownCSI::DeleteLines(v));
+    expect_csi_params([1], b'S', |[v]| crate::KnownCSI::ScrollUp(v));
+    expect_csi_params([1], b'T', |[v]| crate::KnownCSI::ScrollDown(v));
 
     expect_csi_params([1, 1], b'f', |[row, col]| {
-        crate::CSI::HorizontalVerticalPosition { row, col }
+        crate::KnownCSI::HorizontalVerticalPosition { row, col }
     });
 
     expect_csi_params([1, 1], b'r', |[top, bottom]| {
-        crate::CSI::SetScrollingRegion { top, bottom }
+        crate::KnownCSI::SetScrollingRegion { top, bottom }
     });
-    expect_csi_params([], b's', |[]| crate::CSI::SaveCurrentCursorPosition);
-    expect_csi_params([], b'u', |[]| crate::CSI::RestoreCurrentCursorPosition);
+    expect_csi_params([], b's', |[]| crate::KnownCSI::SaveCurrentCursorPosition);
+    expect_csi_params([], b'u', |[]| crate::KnownCSI::RestoreCurrentCursorPosition);
 }
 
 #[test]
 fn param_idx_sequences() {
     assert_eq!(
         crate::CSIParser::new(b"J").parse(),
-        crate::CSI::EraseDisplay
+        crate::KnownCSI::EraseDisplay
     );
     assert_eq!(
         crate::CSIParser::new(b"0J").parse(),
-        crate::CSI::EraseFromCursor
+        crate::KnownCSI::EraseFromCursor
     );
     assert_eq!(
         crate::CSIParser::new(b"1J").parse(),
-        crate::CSI::EraseToCursor
+        crate::KnownCSI::EraseToCursor
     );
     assert_eq!(
         crate::CSIParser::new(b"2J").parse(),
-        crate::CSI::EraseScreen
+        crate::KnownCSI::EraseScreen
     );
     assert_eq!(
         crate::CSIParser::new(b"3J").parse(),
-        crate::CSI::EraseSavedLines
+        crate::KnownCSI::EraseSavedLines
     );
 
     assert_eq!(
         crate::CSIParser::new(b"0K").parse(),
-        crate::CSI::EraseFromCursorToEndOfLine
+        crate::KnownCSI::EraseFromCursorToEndOfLine
     );
     assert_eq!(
         crate::CSIParser::new(b"1K").parse(),
-        crate::CSI::EraseStartOfLineToCursor
+        crate::KnownCSI::EraseStartOfLineToCursor
     );
-    assert_eq!(crate::CSIParser::new(b"2K").parse(), crate::CSI::EraseLine);
+    assert_eq!(
+        crate::CSIParser::new(b"2K").parse(),
+        crate::KnownCSI::EraseLine
+    );
 
-    assert_eq!(crate::CSIParser::new(b"4i").parse(), crate::CSI::AuxPortOff);
-    assert_eq!(crate::CSIParser::new(b"5i").parse(), crate::CSI::AuxPortOn);
+    assert_eq!(
+        crate::CSIParser::new(b"4i").parse(),
+        crate::KnownCSI::AuxPortOff
+    );
+    assert_eq!(
+        crate::CSIParser::new(b"5i").parse(),
+        crate::KnownCSI::AuxPortOn
+    );
 
     assert_eq!(
         crate::CSIParser::new(b"5n").parse(),
-        crate::CSI::DeviceStatusReport
+        crate::KnownCSI::DeviceStatusReport
     );
     assert_eq!(
         crate::CSIParser::new(b"6n").parse(),
-        crate::CSI::ReportCursorPosition
+        crate::KnownCSI::ReportCursorPosition
     );
 }

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ansi = {path = "../ansi", features = ["no_panic", "crepr"]}
+ansi = {path = "../ansi", features = ["crepr", "no_panic"]}
 
 [lib]
 crate-type = ["cdylib", "staticlib"]

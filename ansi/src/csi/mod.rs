@@ -9,9 +9,5 @@ pub use known::*;
 pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum CSIResult<'a> {
-    Sequence(CSIParser<'a>),
-
-    SequenceTooLarge,
-    IntermediateOverflow,
-}
+#[repr(transparent)]
+pub struct CSI<'a>(pub crate::Slice<'a, u8>);

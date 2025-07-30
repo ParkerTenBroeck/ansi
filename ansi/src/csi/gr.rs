@@ -1,6 +1,7 @@
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "crepr", repr(C))]
 pub enum Color {
     Default,
 
@@ -35,6 +36,7 @@ pub enum Color {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
+#[cfg_attr(feature = "crepr", repr(C))]
 pub enum SelectGraphic {
     Reset,
     Bold,
@@ -80,7 +82,7 @@ pub enum SelectGraphic {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-
+#[cfg_attr(feature = "crepr", repr(C))]
 pub struct GraphicsRendition<'a>(pub CSIParser<'a>);
 
 impl<'a> core::fmt::Debug for GraphicsRendition<'a> {

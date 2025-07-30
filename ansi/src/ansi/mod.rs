@@ -4,28 +4,43 @@ mod test;
 pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[allow(non_camel_case_types)]
+#[cfg_attr(feature = "crepr", repr(C))]
 pub enum Out<'a> {
-    Ansi(Ansi<'a>),
-    Data(char),
+    Data(crate::Mchar),
 
-    DCSData(char),
-    SData(char),
-    PMData(char),
-    APCData(char),
-    OSData(char),
+    DCSData(crate::Mchar),
+    SData(crate::Mchar),
+    PMData(crate::Mchar),
+    APCData(crate::Mchar),
+    OSData(crate::Mchar),
+
+    CSI(crate::csi::CSI<'a>),
+    CSISequenceTooLarge,
+    CSIIntermediateOverflow,
+
+    nF(crate::Slice<'a, u8>),
+    nFSequenceTooLarge,
+    nFInvalidSequence,
+
+    // 0x00 ..= 0x1F
+    C0(C0),
+    /// Fe
+    C1(C1),
+    Fp(Fp),
+    Fs(Fs),
+
+    /// Space
+    SP,
+    /// Delete
+    DEL,
+
+    InvalidEscapeByte(u8),
 
     InvalidUtf8Sequence,
     InvalidCodepoint(u32),
 
     None,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Ansi<'a> {
-    /// 0x00-0x31 + 0x32? + 0x7F?
-    C0(C0),
-    /// 0x1b or 8bit?
-    C1(C1<'a>),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -93,34 +108,6 @@ pub enum C0 {
     RS = 30,
     /// Unit Separator
     US = 31,
-    /// Space
-    SP = 32,
-    /// Delete
-    DEL = 127,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum C1<'a> {
-    /// 0x20-0x2F,
-    nF(nF<'a>),
-    /// 0x30-0x3F,
-    Fp(Fp),
-    /// 0x40-0x5F,
-    Fe(Fe<'a>),
-    /// 0x60-0x7E,
-    Fs(Fs),
-    /// Not nF, Fp, Fe, Fs
-    Invalid(u8),
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-/// A sequence starting with 0x1b with a character in the range 0x20-0x2F following
-pub enum nF<'a> {
-    Unknown(&'a [u8]),
-    SequenceTooLarge,
-    InvalidSequence,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -153,7 +140,7 @@ pub enum Fp {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 /// A sequence starting with 0x1b with a character in the range 0x40-0x5F following
 #[repr(u8)]
-pub enum Fe<'a> {
+pub enum C1 {
     /// '@' Padding Character
     PAD = b'@',
     /// 'A' High Octet Preset
@@ -209,7 +196,7 @@ pub enum Fe<'a> {
     /// 'Z' Single Character Introducer
     SCI = b'Z',
     /// '[' Control Sequence Introducer [CSI]
-    CSI(crate::csi::CSIResult<'a>) = b'[',
+    CSI = b'[',
     /// '\' String Terminator
     ST = b'\\',
     /// ']' Operating System Command

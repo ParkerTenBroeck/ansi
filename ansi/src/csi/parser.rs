@@ -1,5 +1,6 @@
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(u8, C)]
+#[repr(u8)]
+#[cfg_attr(feature = "crepr", repr(C))]
 pub enum CSIPart {
     Param(Option<u16>),
     SubParam(Option<u16>),
@@ -14,20 +15,21 @@ pub enum CSIPart {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8)]
 enum CSIParserState {
     Start,
     Middle,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[repr(C)]
-
-pub struct CSIParser<'a>(&'a [u8], CSIParserState);
+#[cfg_attr(feature = "crepr", repr(C))]
+pub struct CSIParser<'a>(crate::Slice<'a, u8>, CSIParserState);
 
 impl<'a> CSIParser<'a> {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn new(input: &'a [u8]) -> Self {
-        Self(input, CSIParserState::Start)
+        #[allow(clippy::useless_conversion)]
+        Self(input.into(), CSIParserState::Start)
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
@@ -41,25 +43,23 @@ impl<'a> CSIParser<'a> {
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
+    #[allow(clippy::useless_conversion)]
     fn pop_front(&mut self) -> Option<u8> {
-        match self.0 {
-            [v, r @ ..] => {
-                self.0 = r;
-                Some(*v)
-            }
-            _ => None,
-        }
+        let slice: &'a [u8] = From::from(self.0);
+        let (v, r) = slice.split_first()?;
+        let v = *v;
+        self.0 = r.into();
+        Some(v)
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
+    #[allow(clippy::useless_conversion)]
     fn pop_back(&mut self) -> Option<u8> {
-        match self.0 {
-            [r @ .., v] => {
-                self.0 = r;
-                Some(*v)
-            }
-            _ => None,
-        }
+        let slice: &'a [u8] = From::from(self.0);
+        let (v, r) = slice.split_last()?;
+        let v = *v;
+        self.0 = r.into();
+        Some(v)
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
@@ -121,7 +121,7 @@ impl<'a> CSIParser<'a> {
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
-    fn peek(&self) -> Option<CSIPart> {
+    pub fn peek(&self) -> Option<CSIPart> {
         let mut copy = *self;
         copy.next()
     }
