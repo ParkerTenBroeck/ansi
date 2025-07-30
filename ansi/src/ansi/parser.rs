@@ -22,6 +22,8 @@ enum StringKind {
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[repr(u8)]
+
 enum IgnoreKind {
     #[default]
     Regular,
@@ -46,11 +48,14 @@ enum State {
     Nf(bool),
 }
 
-pub type SizedAnsiParser<const BUF_CAP: usize = 256> = AnsiParser<[u8; BUF_CAP]>;
+
+pub type SizedAnsiParser<const BUF_CAP: usize> = AnsiParser<[u8; BUF_CAP]>;
+
 pub type UnsizedAnsiParser = AnsiParser<[u8]>;
 
 #[repr(C)]
 #[derive(Debug)]
+
 pub struct AnsiParser<T: ?Sized> {
     pub bit8_enabled: bool,
     pub del_special: bool,
@@ -155,17 +160,17 @@ impl UnsizedAnsiParser {
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
-    fn insert_into_byte_buffer(&mut self, input: u8) -> Result<(), ()> {
+    fn insert_into_byte_buffer(&mut self, input: u8) -> bool {
         if let Some(e) = self.buffer.get_mut(self.buffer_count) {
             *e = input;
             if let Some(r) = self.buffer_count.checked_add(1) {
                 self.buffer_count = r;
-                Ok(())
+                true
             } else {
-                Err(())
+                false
             }
         } else {
-            Err(())
+            false
         }
     }
 
@@ -250,7 +255,7 @@ impl UnsizedAnsiParser {
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn push_p(&mut self, input: u8) {
-        if self.insert_into_byte_buffer(input).is_err() && !self.csi_silent_sequence_overflow {
+        if !self.insert_into_byte_buffer(input) && !self.csi_silent_sequence_overflow {
             self.state = State::CsiIgnore(IgnoreKind::SequenceOverflow);
         }
     }
@@ -288,7 +293,7 @@ impl UnsizedAnsiParser {
             }
             return;
         }
-        if self.insert_into_byte_buffer(input).is_err() {
+        if !self.insert_into_byte_buffer(input) {
             if !self.csi_silent_sequence_overflow {
                 self.state = State::CsiIgnore(IgnoreKind::SequenceOverflow);
                 return;
@@ -300,7 +305,7 @@ impl UnsizedAnsiParser {
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn push_f(&mut self, input: u8) -> Out {
-        if self.insert_into_byte_buffer(input).is_err() {
+        if !self.insert_into_byte_buffer(input) {
             if !self.csi_silent_sequence_overflow {
                 return Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::SequenceTooLarge))));
             }
@@ -385,7 +390,7 @@ impl UnsizedAnsiParser {
             State::Escape => match input {
                 0x20..=0x2F => {
                     self.reset_byte_buffer();
-                    self.state = State::Nf(self.insert_into_byte_buffer(input).is_err());
+                    self.state = State::Nf(!self.insert_into_byte_buffer(input));
                     Out::None
                 }
                 0x30..=0x3F => {
@@ -514,13 +519,13 @@ impl UnsizedAnsiParser {
             },
             State::Nf(err) => match input {
                 0x20..=0x2f => {
-                    self.state = State::Nf(self.insert_into_byte_buffer(input).is_err());
+                    self.state = State::Nf(!self.insert_into_byte_buffer(input));
                     Out::None
                 }
                 0x30..=0x7E => {
                     self.state = State::Ground;
                     if err
-                        && self.insert_into_byte_buffer(input).is_err()
+                        && !self.insert_into_byte_buffer(input)
                         && !self.nf_silent_sequence_overflow
                     {
                         Out::Ansi(Ansi::C1(C1::nF(nF::SequenceTooLarge)))

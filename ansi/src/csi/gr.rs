@@ -80,6 +80,7 @@ pub enum SelectGraphic {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+
 pub struct GraphicsRendition<'a>(pub CSIParser<'a>);
 
 impl<'a> core::fmt::Debug for GraphicsRendition<'a> {

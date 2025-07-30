@@ -21,6 +21,7 @@ enum CSIParserState {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(C)]
+
 pub struct CSIParser<'a>(&'a [u8], CSIParserState);
 
 impl<'a> CSIParser<'a> {

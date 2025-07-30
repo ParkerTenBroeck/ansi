@@ -1,0 +1,12 @@
+[package]
+name = "ansi"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+no_panic = ["no-panic"]
+crepr = []
+
+[dependencies]
+no-panic = {version = "0.1", optional = true}

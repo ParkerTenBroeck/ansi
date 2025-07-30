@@ -1,6 +1,7 @@
 pub mod gr;
 pub mod known;
 pub mod parser;
+#[cfg(test)]
 mod test;
 
 pub use gr::*;
