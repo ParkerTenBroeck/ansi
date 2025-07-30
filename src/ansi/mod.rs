@@ -1,4 +1,5 @@
 mod parser;
+mod test;
 pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

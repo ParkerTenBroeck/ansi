@@ -4,8 +4,6 @@
 #[macro_use]
 extern crate std;
 
-mod test;
-
 pub mod ansi;
 pub use ansi::*;
 

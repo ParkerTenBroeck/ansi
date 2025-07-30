@@ -139,7 +139,7 @@ impl<'a> Iterator for CSIParser<'a> {
             if matches!(self.peek_first(), None | Some(0x20..=0x2F|0x40..=0x7E|b':'|b';')) {
                 self.1 = CSIParserState::Middle;
                 return Some(CSIPart::Param(None));
-            }else if matches!(self.peek_first(), Some(b'0'..=b'9')){
+            } else if matches!(self.peek_first(), Some(b'0'..=b'9')) {
                 self.1 = CSIParserState::Middle;
             }
         }

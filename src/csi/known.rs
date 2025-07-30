@@ -216,7 +216,7 @@ impl<'a> CSIParser<'a> {
         if self.empty() {
             Some(csi)
         } else {
-            return Some(CSI::Unknown(copy));
+            Some(CSI::Unknown(copy))
         }
     }
 }

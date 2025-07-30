@@ -339,3 +339,83 @@ fn param_idx_sequences() {
         crate::CSI::ReportCursorPosition
     );
 }
+
+#[test]
+pub fn utf8() {
+    use crate::*;
+
+    fn encode(c: u32, vec: &mut std::vec::Vec<u8>) {
+        let start = vec.len();
+        if c < 0x80 {
+            return vec.insert(start, c as u8);
+        }
+
+        vec.insert(start, (((c >> 6 * 0) as u8) & 0b111111) | 0b10000000);
+        if c < 0x800 {
+            return vec.insert(start, ((c >> 6 * 1) as u8 & 0b11111) | 0b11000000);
+        }
+        vec.insert(start, (((c >> 6 * 1) as u8) & 0b111111) | 0b10000000);
+        if c < 10000 {
+            return vec.insert(start, ((c >> 6 * 2) as u8 & 0b1111) | 0b11100000);
+        }
+        vec.insert(start, (((c >> 6 * 2) as u8) & 0b111111) | 0b10000000);
+        if c < 200000 {
+            return vec.insert(start, ((c >> 6 * 3) as u8 & 0b111) | 0b11110000);
+        }
+        vec.insert(start, (((c >> 6 * 3) as u8) & 0b111111) | 0b10000000);
+        if c < 4000000 {
+            return vec.insert(start, ((c >> 6 * 4) as u8 & 0b11) | 0b11111000);
+        }
+        vec.insert(start, (((c >> 6 * 4) as u8) & 0b111111) | 0b10000000);
+        return vec.insert(start, ((c >> 6 * 5) as u8 & 0b1) | 0b11111100);
+    }
+
+    let mut ansi = SizedAnsiParser::<256>::new();
+    ansi.utf8 = true;
+    ansi.del_special = false;
+    ansi.space_special = false;
+
+    let mut vec = std::vec::Vec::new();
+    for c in 0x32..=u32::MAX >> 1 {
+        vec.clear();
+        encode(c, &mut vec);
+
+        ansi.bit8_enabled = true;
+        assert_eq!(ansi.next(0x00), Out::Ansi(Ansi::C0(C0::NUL)));
+        assert_eq!(ansi.next(0x1F), Out::Ansi(Ansi::C0(C0::US)));
+        for (i, b) in vec.iter().copied().enumerate() {
+            if i == vec.len() - 1 {
+                if let Some(c) = char::from_u32(c) {
+                    assert_eq!(ansi.next(b), Out::Data(c));
+                } else {
+                    assert_eq!(ansi.next(b), Out::InvalidCodepoint(c));
+                }
+            } else {
+                assert_eq!(ansi.next(b), Out::None);
+            }
+        }
+        assert_eq!(ansi.next(0x80), Out::Ansi(Ansi::C1(C1::Fe(Fe::PAD))));
+        assert_eq!(ansi.next(0x9F), Out::Ansi(Ansi::C1(C1::Fe(Fe::APC))));
+        assert_eq!(ansi.next(0x9C), Out::Ansi(Ansi::C1(C1::Fe(Fe::ST))));
+
+        ansi.bit8_enabled = false;
+        assert_eq!(ansi.next(0x00), Out::Ansi(Ansi::C0(C0::NUL)));
+        assert_eq!(ansi.next(0x1F), Out::Ansi(Ansi::C0(C0::US)));
+        for (i, b) in vec.iter().copied().enumerate() {
+            if i == vec.len() - 1 {
+                if let Some(c) = char::from_u32(c) {
+                    assert_eq!(ansi.next(b), Out::Data(c));
+                } else {
+                    assert_eq!(ansi.next(b), Out::InvalidCodepoint(c));
+                }
+            } else {
+                assert_eq!(ansi.next(b), Out::None);
+            }
+        }
+        assert_eq!(ansi.next(0x80), Out::Data(0x80 as char));
+        assert_eq!(ansi.next(0x9E), Out::Data(0x9E as char));
+    }
+}
+
+#[test]
+pub fn invalid_utf8() {}

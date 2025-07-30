@@ -74,8 +74,8 @@ pub struct AnsiParser<T: ?Sized> {
     utf8_state: u8,
     codepoint: u32,
 
-    byte_buffer_count: usize,
-    byte_buffer: T,
+    buffer_count: usize,
+    buffer: T,
 }
 
 impl<const BYTE_BUF_SIZE: usize> core::default::Default for SizedAnsiParser<BYTE_BUF_SIZE> {
@@ -107,8 +107,8 @@ impl<const BYTE_BUF_SIZE: usize> SizedAnsiParser<BYTE_BUF_SIZE> {
             utf8_state: 0,
             codepoint: 0,
 
-            byte_buffer_count: 0,
-            byte_buffer: [0; BYTE_BUF_SIZE],
+            buffer_count: 0,
+            buffer: [0; BYTE_BUF_SIZE],
         }
     }
 
@@ -137,29 +137,29 @@ impl UnsizedAnsiParser {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     pub fn reset(&mut self) {
         self.state = State::Ground;
-        self.byte_buffer_count = 0;
+        self.buffer_count = 0;
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn reset_byte_buffer(&mut self) {
-        self.byte_buffer_count = 0;
+        self.buffer_count = 0;
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn current_byte_buffer(&self) -> &[u8] {
-        if self.byte_buffer_count > self.byte_buffer.len() {
-            &self.byte_buffer[..]
+        if self.buffer_count > self.buffer.len() {
+            &self.buffer[..]
         } else {
-            &self.byte_buffer[..self.byte_buffer_count]
+            &self.buffer[..self.buffer_count]
         }
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn insert_into_byte_buffer(&mut self, input: u8) -> Result<(), ()> {
-        if let Some(e) = self.byte_buffer.get_mut(self.byte_buffer_count) {
+        if let Some(e) = self.buffer.get_mut(self.buffer_count) {
             *e = input;
-            if let Some(r) = self.byte_buffer_count.checked_add(1) {
-                self.byte_buffer_count = r;
+            if let Some(r) = self.buffer_count.checked_add(1) {
+                self.buffer_count = r;
                 Ok(())
             } else {
                 Err(())
@@ -256,16 +256,26 @@ impl UnsizedAnsiParser {
     }
 
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
-    fn shift_immediates_push(&mut self, input: u8) {
-        let mut position = self.byte_buffer.len().saturating_sub(self.immediate_count);
-        while let (Some(v), Some(p)) = (
-            self.byte_buffer.get(position.wrapping_add(1)).copied(),
-            self.byte_buffer.get_mut(position),
-        ) {
-            *p = v;
+    fn shift_csi(&mut self, input: u8) {
+        let mut position = self
+            .buffer
+            .len()
+            .saturating_sub(self.immediate_count)
+            .saturating_sub(1);
+        if position == 0 && matches!(self.buffer.first(), Some(b'?' | b'<' | b'>' | b'=')) {
             position += 1;
         }
-        if let Some(last) = self.byte_buffer.last_mut() {
+        if !matches!(self.buffer.get(position), Some(0x20..=0x2F)) {
+            while let (Some(v), Some(p)) = (
+                self.buffer.get(position.wrapping_add(1)).copied(),
+                self.buffer.get_mut(position),
+            ) {
+                *p = v;
+                position += 1;
+            }
+        }
+
+        if let Some(last) = self.buffer.last_mut() {
             *last = input
         }
     }
@@ -273,7 +283,9 @@ impl UnsizedAnsiParser {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn push_i(&mut self, input: u8) {
         if self.immediate_count == self.max_immediate_count {
-            self.state = State::CsiIgnore(IgnoreKind::ImmediateOverflow);
+            if !self.csi_silent_intermediate_overflow {
+                self.state = State::CsiIgnore(IgnoreKind::ImmediateOverflow);
+            }
             return;
         }
         if self.insert_into_byte_buffer(input).is_err() {
@@ -281,7 +293,7 @@ impl UnsizedAnsiParser {
                 self.state = State::CsiIgnore(IgnoreKind::SequenceOverflow);
                 return;
             }
-            self.shift_immediates_push(input);
+            self.shift_csi(input);
         }
         self.immediate_count = self.immediate_count.wrapping_add(1);
     }
@@ -292,7 +304,7 @@ impl UnsizedAnsiParser {
             if !self.csi_silent_sequence_overflow {
                 return Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::SequenceTooLarge))));
             }
-            self.shift_immediates_push(input);
+            self.shift_csi(input);
         }
 
         Out::Ansi(Ansi::C1(C1::Fe(Fe::CSI(CSIResult::Sequence(
