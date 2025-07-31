@@ -8,6 +8,6 @@ panic = "abort"
 
 [profile.release]
 panic = "abort"
-lot = "fat"
+lto = "fat"
 strip = "debuginfo"
 codegen-units = 1

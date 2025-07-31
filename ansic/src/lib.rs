@@ -1,7 +1,5 @@
 #![no_std]
 
-use ansi::{CSIParser, KnownCSI};
-
 #[repr(C)]
 #[derive(Default)]
 pub struct AnsiParser {
@@ -43,23 +41,29 @@ pub unsafe extern "C" fn ansic_next<'a>(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ansic_parse_csi<'a>(csi: ansi::CSI<'a>) -> KnownCSI<'a> {
-    CSIParser::new(csi.0.into()).parse()
+pub extern "C" fn ansic_parse_csi<'a>(csi: ansi::CSI<'a>) -> ansi::KnownCSI<'a> {
+    ansi::CSIParser::new(csi.0.into()).parse()
 }
 
-// #[unsafe(no_mangle)]
-// pub extern "C" fn ansic_csi_has_next(parser: &ansi::CSIParser<'_>) -> bool {
-//     parser.peek().is_some()
-// }
+#[unsafe(no_mangle)]
+pub extern "C" fn ansic_csi_parser<'a>(csi: ansi::CSI<'a>) -> ansi::CSIParser<'a> {
+    ansi::CSIParser::new(csi.0.into())
+}
 
-// #[unsafe(no_mangle)]
-// /// # Safety
-// /// the result of `ansic_csi_has_next` MUST be true for this function to be called
-// pub unsafe extern "C" fn ansic_csi_next(parser: &mut ansi::CSIParser<'_>) -> ansi::CSIPart {
-//     unsafe { parser.next().unwrap_unchecked() }
-// }
+#[unsafe(no_mangle)]
+pub extern "C" fn ansic_csi_next(parser: &mut ansi::CSIParser<'_>) -> ansi::MOption<ansi::CSIPart> {
+    parser.next().into()
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ansic_sgr_next(
+    parser: &mut ansi::GraphicsRendition<'_>,
+) -> ansi::MOption<ansi::SelectGraphic> {
+    parser.next().into()
+}
 
 #[panic_handler]
+#[cfg(not(test))]
 pub fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}
 }

@@ -2,8 +2,8 @@
 #[repr(u8)]
 #[cfg_attr(feature = "crepr", repr(C))]
 pub enum CSIPart {
-    Param(Option<u16>),
-    SubParam(Option<u16>),
+    Param(crate::MOption<u16>),
+    SubParam(crate::MOption<u16>),
 
     Question,
     Eq,
@@ -23,7 +23,7 @@ enum CSIParserState {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "crepr", repr(C))]
-pub struct CSIParser<'a>(crate::Slice<'a, u8>, CSIParserState);
+pub struct CSIParser<'a>(crate::MSlice<'a, u8>, CSIParserState);
 
 impl<'a> CSIParser<'a> {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
@@ -139,12 +139,12 @@ impl<'a> Iterator for CSIParser<'a> {
         if self.1 == CSIParserState::Start {
             if matches!(self.peek_first(), None | Some(0x20..=0x2F|0x40..=0x7E|b':'|b';')) {
                 self.1 = CSIParserState::Middle;
-                return Some(CSIPart::Param(None));
+                return Some(CSIPart::Param(crate::MOption::None));
             } else if matches!(self.peek_first(), Some(b'0'..=b'9')) {
                 self.1 = CSIParserState::Middle;
             }
         }
-        let mut value = None;
+        let mut value = crate::MOption::None;
         let sub;
         match self.pop_front() {
             Some(b'?') => return Some(CSIPart::Question),
@@ -161,17 +161,17 @@ impl<'a> Iterator for CSIParser<'a> {
             }
             Some(v @ b'0'..=b'9') => {
                 sub = false;
-                value = Some((v - b'0') as u16);
+                value = crate::MOption::Some((v - b'0') as u16);
             }
             _ => return None,
         }
         while let Some(v @ b'0'..=b'9') = self.peek_first() {
             self.pop_front();
             let d = (v - b'0') as u16;
-            if let Some(v) = value {
-                value = Some(v.wrapping_mul(10).wrapping_add(d))
+            if let crate::MOption::Some(v) = value {
+                value = crate::MOption::Some(v.wrapping_mul(10).wrapping_add(d))
             } else {
-                value = Some(d);
+                value = crate::MOption::Some(d);
             }
         }
         if sub {

@@ -3,15 +3,18 @@ fn csi_parser_empty() {
     let result = crate::CSIParser::new(b"m").collect::<std::vec::Vec<_>>();
     assert_eq!(
         result,
-        [crate::CSIPart::Param(None), crate::CSIPart::Final(b'm')]
+        [
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::Final(b'm')
+        ]
     );
 
     let result = crate::CSIParser::new(b":m").collect::<std::vec::Vec<_>>();
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
-            crate::CSIPart::SubParam(None),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::SubParam(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -20,8 +23,8 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(Some(1)),
-            crate::CSIPart::SubParam(None),
+            crate::CSIPart::Param(crate::MOption::Some(1)),
+            crate::CSIPart::SubParam(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -30,8 +33,8 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
-            crate::CSIPart::SubParam(Some(3)),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::SubParam(crate::MOption::Some(3)),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -40,9 +43,9 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
-            crate::CSIPart::SubParam(Some(3)),
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::SubParam(crate::MOption::Some(3)),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -51,9 +54,9 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
-            crate::CSIPart::SubParam(None),
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::SubParam(crate::MOption::None),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -62,9 +65,9 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(Some(1)),
-            crate::CSIPart::SubParam(None),
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::Some(1)),
+            crate::CSIPart::SubParam(crate::MOption::None),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -73,10 +76,10 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
-            crate::CSIPart::Param(None),
-            crate::CSIPart::SubParam(None),
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::Param(crate::MOption::None),
+            crate::CSIPart::SubParam(crate::MOption::None),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -87,7 +90,7 @@ fn csi_parser_empty() {
         [
             crate::CSIPart::Question,
             crate::CSIPart::Question,
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Final(b'm')
         ]
     );
@@ -96,7 +99,7 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(Some(1)),
+            crate::CSIPart::Param(crate::MOption::Some(1)),
             crate::CSIPart::Question,
             crate::CSIPart::Lt,
             crate::CSIPart::Gt,
@@ -109,7 +112,7 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(None),
+            crate::CSIPart::Param(crate::MOption::None),
             crate::CSIPart::Intermediate(b'!'),
             crate::CSIPart::Final(b'm')
         ]
@@ -118,7 +121,7 @@ fn csi_parser_empty() {
     assert_eq!(
         result,
         [
-            crate::CSIPart::Param(Some(44)),
+            crate::CSIPart::Param(crate::MOption::Some(44)),
             crate::CSIPart::Intermediate(b'!'),
             crate::CSIPart::Final(b'm')
         ]
@@ -134,7 +137,7 @@ fn csi_parser_intermediate() {
         assert_eq!(
             result,
             [
-                crate::CSIPart::Param(None),
+                crate::CSIPart::Param(crate::MOption::None),
                 crate::CSIPart::Intermediate(i),
                 crate::CSIPart::Final(b'm')
             ]
@@ -150,7 +153,10 @@ fn csi_parser_final() {
         let result = crate::CSIParser::new(&bytes).collect::<std::vec::Vec<_>>();
         assert_eq!(
             result,
-            [crate::CSIPart::Param(None), crate::CSIPart::Final(i)]
+            [
+                crate::CSIPart::Param(crate::MOption::None),
+                crate::CSIPart::Final(i)
+            ]
         );
     }
 }

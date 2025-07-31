@@ -19,7 +19,7 @@ pub enum Out<'a> {
     CSISequenceTooLarge,
     CSIIntermediateOverflow,
 
-    nF(crate::Slice<'a, u8>),
+    nF(crate::MSlice<'a, u8>),
     nFSequenceTooLarge,
     nFInvalidSequence,
 

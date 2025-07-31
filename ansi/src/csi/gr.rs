@@ -109,7 +109,7 @@ impl<'a> GraphicsRendition<'a> {
                 return Color::LongNotPresnet;
             };
             match long {
-                CSIPart::SubParam(Some(2)) => {
+                CSIPart::SubParam(crate::MOption::Some(2)) => {
                     let Some([r, g, b]) = self.0.parse_sub_params([0, 0, 0]) else {
                         return Color::MalformedRGB;
                     };
@@ -119,7 +119,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     }
                 }
-                CSIPart::Param(Some(2)) => {
+                CSIPart::Param(crate::MOption::Some(2)) => {
                     let Some([r, g, b]) = self.0.parse_params([0, 0, 0]) else {
                         return Color::MalformedRGB;
                     };
@@ -129,7 +129,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     }
                 }
-                CSIPart::SubParam(Some(5)) => {
+                CSIPart::SubParam(crate::MOption::Some(5)) => {
                     let Some([vga]) = self.0.parse_sub_params([0]) else {
                         return Color::MalformedVGA;
                     };
@@ -139,7 +139,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     }
                 }
-                CSIPart::Param(Some(5)) => {
+                CSIPart::Param(crate::MOption::Some(5)) => {
                     let Some([vga]) = self.0.parse_params([0]) else {
                         return Color::MalformedVGA;
                     };
@@ -149,8 +149,8 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     }
                 }
-                CSIPart::Param(Some(other)) => return Color::InvalidLong(other),
-                CSIPart::SubParam(Some(other)) => return Color::InvalidLong(other),
+                CSIPart::Param(crate::MOption::Some(other)) => return Color::InvalidLong(other),
+                CSIPart::SubParam(crate::MOption::Some(other)) => return Color::InvalidLong(other),
                 _ => return Color::InvalidLong(0),
             }
         }
@@ -190,53 +190,67 @@ impl<'a> Iterator for GraphicsRendition<'a> {
     #[cfg_attr(feature = "no_panic", no_panic::no_panic)]
     fn next(&mut self) -> Option<Self::Item> {
         match self.0.next()? {
-            CSIPart::Param(None) => Some(SelectGraphic::Reset),
-            CSIPart::Param(Some(0)) => Some(SelectGraphic::Reset),
-            CSIPart::Param(Some(1)) => Some(SelectGraphic::Bold),
-            CSIPart::Param(Some(2)) => Some(SelectGraphic::Faint),
-            CSIPart::Param(Some(3)) => Some(SelectGraphic::Italic),
-            CSIPart::Param(Some(4)) => Some(SelectGraphic::Underline),
-            CSIPart::Param(Some(5)) => Some(SelectGraphic::SlowBlink),
-            CSIPart::Param(Some(6)) => Some(SelectGraphic::RapidBlink),
-            CSIPart::Param(Some(7)) => Some(SelectGraphic::InvertFgBg),
-            CSIPart::Param(Some(8)) => Some(SelectGraphic::Conceal),
-            CSIPart::Param(Some(9)) => Some(SelectGraphic::CrossedOut),
-            CSIPart::Param(Some(10)) => Some(SelectGraphic::PrimaryFont),
-            CSIPart::Param(Some(f @ 11..=19)) => Some(SelectGraphic::AlternativeFont(f as u8 - 11)),
-            CSIPart::Param(Some(20)) => Some(SelectGraphic::Fraktur),
-            CSIPart::Param(Some(21)) => Some(SelectGraphic::DoublyUnderlined),
-            CSIPart::Param(Some(22)) => Some(SelectGraphic::NormalIntensity),
-            CSIPart::Param(Some(23)) => Some(SelectGraphic::NeitherItalicNorBackletter),
-            CSIPart::Param(Some(24)) => Some(SelectGraphic::NotUnderlined),
-            CSIPart::Param(Some(25)) => Some(SelectGraphic::NotBlinking),
-            CSIPart::Param(Some(26)) => Some(SelectGraphic::ProportionalSpacing),
-            CSIPart::Param(Some(27)) => Some(SelectGraphic::NotInvertedFgBg),
-            CSIPart::Param(Some(28)) => Some(SelectGraphic::Reveal),
-            CSIPart::Param(Some(29)) => Some(SelectGraphic::NotCrossedOut),
-            CSIPart::Param(Some(c @ (30..=39 | 90..=97))) => Some(SelectGraphic::Fg(
-                self.parse_color(c, Some(39), Some(30), Some(90), Some(38)),
-            )),
-            CSIPart::Param(Some(c @ (40..=49 | 100..=107))) => Some(SelectGraphic::Bg(
-                self.parse_color(c, Some(49), Some(40), Some(100), Some(48)),
-            )),
-            CSIPart::Param(Some(50)) => Some(SelectGraphic::DisableProportionalSpacing),
-            CSIPart::Param(Some(51)) => Some(SelectGraphic::Framed),
-            CSIPart::Param(Some(52)) => Some(SelectGraphic::Encircled),
-            CSIPart::Param(Some(53)) => Some(SelectGraphic::Overlined),
-            CSIPart::Param(Some(54)) => Some(SelectGraphic::NeitherFramedNorEncircled),
-            CSIPart::Param(Some(55)) => Some(SelectGraphic::NotOverlined),
-            CSIPart::Param(Some(c @ 58..=59)) => Some(SelectGraphic::UnderlineColor(
-                self.parse_color(c, Some(59), None, None, Some(58)),
-            )),
-            CSIPart::Param(Some(60)) => Some(SelectGraphic::IdeogramUnderline),
-            CSIPart::Param(Some(61)) => Some(SelectGraphic::IdeogramDoubleUnderline),
-            CSIPart::Param(Some(62)) => Some(SelectGraphic::IdeogramOverline),
-            CSIPart::Param(Some(63)) => Some(SelectGraphic::IdeogramDoubleUnderline),
-            CSIPart::Param(Some(64)) => Some(SelectGraphic::IdeogramStressMarking),
-            CSIPart::Param(Some(65)) => Some(SelectGraphic::IdeogramAttributes),
-            CSIPart::Param(Some(73)) => Some(SelectGraphic::Superscript),
-            CSIPart::Param(Some(74)) => Some(SelectGraphic::Subscript),
-            CSIPart::Param(Some(75)) => Some(SelectGraphic::NeitherSuperscriptNorSubScript),
+            CSIPart::Param(crate::MOption::None) => Some(SelectGraphic::Reset),
+            CSIPart::Param(crate::MOption::Some(0)) => Some(SelectGraphic::Reset),
+            CSIPart::Param(crate::MOption::Some(1)) => Some(SelectGraphic::Bold),
+            CSIPart::Param(crate::MOption::Some(2)) => Some(SelectGraphic::Faint),
+            CSIPart::Param(crate::MOption::Some(3)) => Some(SelectGraphic::Italic),
+            CSIPart::Param(crate::MOption::Some(4)) => Some(SelectGraphic::Underline),
+            CSIPart::Param(crate::MOption::Some(5)) => Some(SelectGraphic::SlowBlink),
+            CSIPart::Param(crate::MOption::Some(6)) => Some(SelectGraphic::RapidBlink),
+            CSIPart::Param(crate::MOption::Some(7)) => Some(SelectGraphic::InvertFgBg),
+            CSIPart::Param(crate::MOption::Some(8)) => Some(SelectGraphic::Conceal),
+            CSIPart::Param(crate::MOption::Some(9)) => Some(SelectGraphic::CrossedOut),
+            CSIPart::Param(crate::MOption::Some(10)) => Some(SelectGraphic::PrimaryFont),
+            CSIPart::Param(crate::MOption::Some(f @ 11..=19)) => {
+                Some(SelectGraphic::AlternativeFont(f as u8 - 11))
+            }
+            CSIPart::Param(crate::MOption::Some(20)) => Some(SelectGraphic::Fraktur),
+            CSIPart::Param(crate::MOption::Some(21)) => Some(SelectGraphic::DoublyUnderlined),
+            CSIPart::Param(crate::MOption::Some(22)) => Some(SelectGraphic::NormalIntensity),
+            CSIPart::Param(crate::MOption::Some(23)) => {
+                Some(SelectGraphic::NeitherItalicNorBackletter)
+            }
+            CSIPart::Param(crate::MOption::Some(24)) => Some(SelectGraphic::NotUnderlined),
+            CSIPart::Param(crate::MOption::Some(25)) => Some(SelectGraphic::NotBlinking),
+            CSIPart::Param(crate::MOption::Some(26)) => Some(SelectGraphic::ProportionalSpacing),
+            CSIPart::Param(crate::MOption::Some(27)) => Some(SelectGraphic::NotInvertedFgBg),
+            CSIPart::Param(crate::MOption::Some(28)) => Some(SelectGraphic::Reveal),
+            CSIPart::Param(crate::MOption::Some(29)) => Some(SelectGraphic::NotCrossedOut),
+            CSIPart::Param(crate::MOption::Some(c @ (30..=39 | 90..=97))) => Some(
+                SelectGraphic::Fg(self.parse_color(c, Some(39), Some(30), Some(90), Some(38))),
+            ),
+            CSIPart::Param(crate::MOption::Some(c @ (40..=49 | 100..=107))) => Some(
+                SelectGraphic::Bg(self.parse_color(c, Some(49), Some(40), Some(100), Some(48))),
+            ),
+            CSIPart::Param(crate::MOption::Some(50)) => {
+                Some(SelectGraphic::DisableProportionalSpacing)
+            }
+            CSIPart::Param(crate::MOption::Some(51)) => Some(SelectGraphic::Framed),
+            CSIPart::Param(crate::MOption::Some(52)) => Some(SelectGraphic::Encircled),
+            CSIPart::Param(crate::MOption::Some(53)) => Some(SelectGraphic::Overlined),
+            CSIPart::Param(crate::MOption::Some(54)) => {
+                Some(SelectGraphic::NeitherFramedNorEncircled)
+            }
+            CSIPart::Param(crate::MOption::Some(55)) => Some(SelectGraphic::NotOverlined),
+            CSIPart::Param(crate::MOption::Some(c @ 58..=59)) => Some(
+                SelectGraphic::UnderlineColor(self.parse_color(c, Some(59), None, None, Some(58))),
+            ),
+            CSIPart::Param(crate::MOption::Some(60)) => Some(SelectGraphic::IdeogramUnderline),
+            CSIPart::Param(crate::MOption::Some(61)) => {
+                Some(SelectGraphic::IdeogramDoubleUnderline)
+            }
+            CSIPart::Param(crate::MOption::Some(62)) => Some(SelectGraphic::IdeogramOverline),
+            CSIPart::Param(crate::MOption::Some(63)) => {
+                Some(SelectGraphic::IdeogramDoubleUnderline)
+            }
+            CSIPart::Param(crate::MOption::Some(64)) => Some(SelectGraphic::IdeogramStressMarking),
+            CSIPart::Param(crate::MOption::Some(65)) => Some(SelectGraphic::IdeogramAttributes),
+            CSIPart::Param(crate::MOption::Some(73)) => Some(SelectGraphic::Superscript),
+            CSIPart::Param(crate::MOption::Some(74)) => Some(SelectGraphic::Subscript),
+            CSIPart::Param(crate::MOption::Some(75)) => {
+                Some(SelectGraphic::NeitherSuperscriptNorSubScript)
+            }
 
             p => Some(SelectGraphic::Unknown(p)),
         }

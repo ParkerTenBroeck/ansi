@@ -15,11 +15,16 @@ pub use csi::*;
 pub mod ffi;
 
 #[cfg(not(feature = "crepr"))]
-pub(crate) type Slice<'a, T> = &'a [T];
+pub type MSlice<'a, T> = &'a [T];
 #[cfg(feature = "crepr")]
-pub type Slice<'a, T> = ffi::Slice<'a, T>;
+pub type MSlice<'a, T> = ffi::Slice<'a, T>;
 
 #[cfg(not(feature = "crepr"))]
-pub(crate) type Mchar = core::primitive::char;
+pub type Mchar = core::primitive::char;
 #[cfg(feature = "crepr")]
 pub type Mchar = u32;
+
+#[cfg(not(feature = "crepr"))]
+pub type MOption<T> = Option<T>;
+#[cfg(feature = "crepr")]
+pub type MOption<T> = ffi::FfiOption<T>;

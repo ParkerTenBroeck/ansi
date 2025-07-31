@@ -55,3 +55,38 @@ impl<'a, T> Deref for Slice<'a, T> {
         (*self).as_slice()
     }
 }
+
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum FfiOption<T> {
+    #[default]
+    None,
+    Some(T),
+}
+
+impl<T> FfiOption<T> {
+    pub fn unwrap_or(self, default: T) -> T {
+        match self {
+            Self::Some(v) => v,
+            Self::None => default,
+        }
+    }
+}
+
+impl<T> From<Option<T>> for FfiOption<T> {
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(v) => Self::Some(v),
+            None => Self::None,
+        }
+    }
+}
+
+impl<T> From<FfiOption<T>> for Option<T> {
+    fn from(value: FfiOption<T>) -> Self {
+        match value {
+            FfiOption::None => Self::None,
+            FfiOption::Some(v) => Self::Some(v),
+        }
+    }
+}
