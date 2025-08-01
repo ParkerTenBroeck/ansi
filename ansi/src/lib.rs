@@ -13,18 +13,27 @@ pub use csi::*;
 
 #[cfg(feature = "crepr")]
 pub mod ffi;
+#[cfg(feature = "crepr")]
+pub use ffi::*;
+
 
 #[cfg(not(feature = "crepr"))]
-pub type MSlice<'a, T> = &'a [T];
-#[cfg(feature = "crepr")]
-pub type MSlice<'a, T> = ffi::Slice<'a, T>;
-
+pub type FfiSlice<'a, T> = &'a [T];
 #[cfg(not(feature = "crepr"))]
-pub type Mchar = core::primitive::char;
-#[cfg(feature = "crepr")]
-pub type Mchar = u32;
-
+pub use char as FfiChar;
 #[cfg(not(feature = "crepr"))]
-pub type MOption<T> = Option<T>;
-#[cfg(feature = "crepr")]
-pub type MOption<T> = ffi::FfiOption<T>;
+pub use Option as FfiOption;
+
+// // #[cfg(not(feature = "crepr"))]
+// // #[cfg(feature = "crepr")]
+// pub use ffi::FfiSlice as MSlice;
+
+// // #[cfg(not(feature = "crepr"))]
+// // pub use char as Mchar;
+// // #[cfg(feature = "crepr")]
+// pub use u32 as Mchar;
+
+// // #[cfg(not(feature = "crepr"))]
+// // pub use Option as MOption;
+// // #[cfg(feature = "crepr")]
+// pub use ffi::FfiOption as MOption;

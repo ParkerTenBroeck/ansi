@@ -26,10 +26,10 @@ enum StringKind {
 #[repr(u8)]
 enum IgnoreKind {
     #[default]
-    Regular,
+    InvalidByteEncountered,
     SequenceOverflow,
     ImmediateOverflow,
-    Invalid,
+    InvalidSequence,
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
@@ -360,15 +360,15 @@ impl UnsizedAnsiParser {
             match self.next_utf8(input) {
                 Utf8Result::Produce(char) => match self.state.state {
                     State::String(str) => match str {
-                        StringKind::DeviceControl => return Out::DCSData(char as crate::Mchar),
-                        StringKind::Regular => return Out::SData(char as crate::Mchar),
-                        StringKind::Privacy => return Out::PMData(char as crate::Mchar),
+                        StringKind::DeviceControl => return Out::DCSData(char as crate::FfiChar),
+                        StringKind::Regular => return Out::SData(char as crate::FfiChar),
+                        StringKind::Privacy => return Out::PMData(char as crate::FfiChar),
                         StringKind::ApplicationProgramCommand => {
-                            return Out::APCData(char as crate::Mchar);
+                            return Out::APCData(char as crate::FfiChar);
                         }
-                        StringKind::Os => return Out::OSData(char as crate::Mchar),
+                        StringKind::Os => return Out::OSData(char as crate::FfiChar),
                     },
-                    _ => return Out::Data(char as crate::Mchar),
+                    _ => return Out::Data(char as crate::FfiChar),
                 },
                 Utf8Result::Consume => return Out::None,
                 Utf8Result::InvalidCodepoint(code) => return Out::InvalidCodepoint(code),
@@ -424,7 +424,7 @@ impl UnsizedAnsiParser {
                 31 => C0::US,
                 32 if self.cfg.space_special => return Out::SP,
                 127 if self.cfg.del_special => return Out::DEL,
-                _ => return Out::Data(input as crate::Mchar),
+                _ => return Out::Data(input as crate::FfiChar),
             }),
             State::Escape => match input {
                 0x20..=0x2F => {
@@ -594,13 +594,13 @@ impl UnsizedAnsiParser {
                     self.push_f(input)
                 }
                 _ => {
-                    self.state.state = State::CsiIgnore(IgnoreKind::Regular);
+                    self.state.state = State::CsiIgnore(IgnoreKind::InvalidByteEncountered);
                     Out::None
                 }
             },
             State::CsiI => match input {
                 0x30..=0x3F => {
-                    self.state.state = State::CsiIgnore(IgnoreKind::Invalid);
+                    self.state.state = State::CsiIgnore(IgnoreKind::InvalidSequence);
                     Out::None
                 }
                 0x20..=0x2F => {
@@ -612,7 +612,7 @@ impl UnsizedAnsiParser {
                     self.push_f(input)
                 }
                 _ => {
-                    self.state.state = State::CsiIgnore(IgnoreKind::Regular);
+                    self.state.state = State::CsiIgnore(IgnoreKind::InvalidByteEncountered);
                     Out::None
                 }
             },
@@ -620,10 +620,10 @@ impl UnsizedAnsiParser {
                 0x40..=0x7E => {
                     self.state.state = State::Ground;
                     match kind {
-                        IgnoreKind::Regular => Out::None,
+                        IgnoreKind::InvalidByteEncountered => Out::None,
                         IgnoreKind::SequenceOverflow => Out::CSISequenceTooLarge,
                         IgnoreKind::ImmediateOverflow => Out::CSIIntermediateOverflow,
-                        IgnoreKind::Invalid => Out::None,
+                        IgnoreKind::InvalidSequence => Out::None,
                     }
                 }
                 _ => Out::None,
@@ -637,11 +637,11 @@ impl UnsizedAnsiParser {
                     }
                 }
                 c => match kind {
-                    StringKind::DeviceControl => Out::DCSData(c as crate::Mchar),
-                    StringKind::Regular => Out::SData(c as crate::Mchar),
-                    StringKind::Os => Out::OSData(c as crate::Mchar),
-                    StringKind::Privacy => Out::PMData(c as crate::Mchar),
-                    StringKind::ApplicationProgramCommand => Out::APCData(c as crate::Mchar),
+                    StringKind::DeviceControl => Out::DCSData(c as crate::FfiChar),
+                    StringKind::Regular => Out::SData(c as crate::FfiChar),
+                    StringKind::Os => Out::OSData(c as crate::FfiChar),
+                    StringKind::Privacy => Out::PMData(c as crate::FfiChar),
+                    StringKind::ApplicationProgramCommand => Out::APCData(c as crate::FfiChar),
                 },
             },
         }

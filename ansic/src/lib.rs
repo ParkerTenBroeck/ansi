@@ -15,8 +15,7 @@ pub struct AnsiParser {
 pub unsafe extern "C" fn ansic_init(ptr: *mut AnsiParser, buffer_size: usize) {
     unsafe {
         ptr.write(AnsiParser::default());
-        ptr.byte_add(core::mem::size_of::<AnsiParser>())
-            .write_bytes(0, buffer_size);
+        ptr.add(1).cast::<u8>().write_bytes(0, buffer_size);
     }
 }
 
@@ -46,19 +45,19 @@ pub extern "C" fn ansic_parse_csi<'a>(csi: ansi::CSI<'a>) -> ansi::KnownCSI<'a> 
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ansic_csi_parser<'a>(csi: ansi::CSI<'a>) -> ansi::CSIParser<'a> {
+pub extern "C" fn ansic_csi_into_parser<'a>(csi: ansi::CSI<'a>) -> ansi::CSIParser<'a> {
     ansi::CSIParser::new(csi.0.into())
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ansic_csi_next(parser: &mut ansi::CSIParser<'_>) -> ansi::MOption<ansi::CSIPart> {
+pub extern "C" fn ansic_csi_next(parser: &mut ansi::CSIParser<'_>) -> ansi::FfiOption<ansi::CSIPart> {
     parser.next().into()
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn ansic_sgr_next(
     parser: &mut ansi::GraphicsRendition<'_>,
-) -> ansi::MOption<ansi::SelectGraphic> {
+) -> ansi::FfiOption<ansi::SelectGraphic> {
     parser.next().into()
 }
 

@@ -1,19 +1,21 @@
 use core::{fmt::Debug, marker::PhantomData, ops::Deref, ptr::NonNull};
 
+pub type FfiChar = u32;
+
 #[repr(C)]
-pub struct Slice<'a, T> {
+pub struct FfiSlice<'a, T> {
     ptr: NonNull<T>,
     len: usize,
     _p: PhantomData<&'a [T]>,
 }
-impl<'a, T> Clone for Slice<'a, T> {
+impl<'a, T> Clone for FfiSlice<'a, T> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<'a, T> Copy for Slice<'a, T> {}
+impl<'a, T> Copy for FfiSlice<'a, T> {}
 
-impl<'a, T> From<&'a [T]> for Slice<'a, T> {
+impl<'a, T> From<&'a [T]> for FfiSlice<'a, T> {
     fn from(value: &'a [T]) -> Self {
         Self {
             ptr: core::ptr::NonNull::from(value).cast(),
@@ -23,35 +25,35 @@ impl<'a, T> From<&'a [T]> for Slice<'a, T> {
     }
 }
 
-impl<'a, T> From<Slice<'a, T>> for &'a [T] {
-    fn from(value: Slice<'a, T>) -> Self {
+impl<'a, T> From<FfiSlice<'a, T>> for &'a [T] {
+    fn from(value: FfiSlice<'a, T>) -> Self {
         value.as_slice()
     }
 }
 
-impl<'a, T: Eq> PartialEq<Self> for Slice<'a, T> {
+impl<'a, T: Eq> PartialEq<Self> for FfiSlice<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         self.as_slice().eq(other.as_slice())
     }
 }
-impl<'a, T: Eq> Eq for Slice<'a, T> {}
+impl<'a, T: Eq> Eq for FfiSlice<'a, T> {}
 
-impl<'a, T: Debug> Debug for Slice<'a, T> {
+impl<'a, T: Debug> Debug for FfiSlice<'a, T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.as_slice().fmt(f)
     }
 }
 
-impl<'a, T> Slice<'a, T> {
+impl<'a, T> FfiSlice<'a, T> {
     pub fn as_slice(self) -> &'a [T] {
         unsafe { core::slice::from_raw_parts(self.ptr.as_ptr(), self.len) }
     }
 }
 
-impl<'a, T> Deref for Slice<'a, T> {
+impl<'a, T> Deref for FfiSlice<'a, T> {
     type Target = [T];
 
-    fn deref(self: &'_ Slice<'a, T>) -> &'a [T] {
+    fn deref(self: &'_ FfiSlice<'a, T>) -> &'a [T] {
         (*self).as_slice()
     }
 }

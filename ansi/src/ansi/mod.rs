@@ -7,19 +7,19 @@ pub use parser::*;
 #[allow(non_camel_case_types)]
 #[cfg_attr(feature = "crepr", repr(C))]
 pub enum Out<'a> {
-    Data(crate::Mchar),
+    Data(crate::FfiChar),
 
-    DCSData(crate::Mchar),
-    SData(crate::Mchar),
-    PMData(crate::Mchar),
-    APCData(crate::Mchar),
-    OSData(crate::Mchar),
+    DCSData(crate::FfiChar),
+    SData(crate::FfiChar),
+    PMData(crate::FfiChar),
+    APCData(crate::FfiChar),
+    OSData(crate::FfiChar),
 
     CSI(crate::csi::CSI<'a>),
     CSISequenceTooLarge,
     CSIIntermediateOverflow,
 
-    nF(crate::MSlice<'a, u8>),
+    nF(crate::FfiSlice<'a, u8>),
     nFSequenceTooLarge,
     nFInvalidSequence,
 

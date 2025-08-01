@@ -10,4 +10,4 @@ ansi = {path = "../ansi", features = ["crepr", "no_panic"]}
 crate-type = ["cdylib", "staticlib"]
 
 [build-dependencies]
-cbindgen = "0.29.0"
+cbindgen = {version = "0.29.0"}

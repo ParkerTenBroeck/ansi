@@ -10,4 +10,4 @@ pub use parser::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(transparent)]
-pub struct CSI<'a>(pub crate::MSlice<'a, u8>);
+pub struct CSI<'a>(pub crate::FfiSlice<'a, u8>);

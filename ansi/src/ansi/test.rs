@@ -210,7 +210,7 @@ pub fn utf8() {
         for (i, b) in vec.iter().copied().enumerate() {
             if i == vec.len() - 1 {
                 if let Some(c) = char::from_u32(c) {
-                    assert_eq!(ansi.next(b), Out::Data(c as Mchar));
+                    assert_eq!(ansi.next(b), Out::Data(c as FfiChar));
                 } else {
                     assert_eq!(ansi.next(b), Out::InvalidCodepoint(c));
                 }
@@ -228,7 +228,7 @@ pub fn utf8() {
         for (i, b) in vec.iter().copied().enumerate() {
             if i == vec.len() - 1 {
                 if let Some(c) = char::from_u32(c) {
-                    assert_eq!(ansi.next(b), Out::Data(c as Mchar));
+                    assert_eq!(ansi.next(b), Out::Data(c as FfiChar));
                 } else {
                     assert_eq!(ansi.next(b), Out::InvalidCodepoint(c));
                 }
@@ -236,8 +236,8 @@ pub fn utf8() {
                 assert_eq!(ansi.next(b), Out::None);
             }
         }
-        assert_eq!(ansi.next(0x80), Out::Data(0x80 as Mchar));
-        assert_eq!(ansi.next(0x9E), Out::Data(0x9E as Mchar));
+        assert_eq!(ansi.next(0x80), Out::Data(0x80 as FfiChar));
+        assert_eq!(ansi.next(0x9E), Out::Data(0x9E as FfiChar));
     }
 }
 
