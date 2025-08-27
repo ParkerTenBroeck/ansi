@@ -115,6 +115,16 @@ pub enum Color {
     MalformedRGB,
 }
 
+impl Color{
+    pub fn flatten_vga(self) -> Color{
+        if let Color::VGA(vga) = self{
+            vga.as_color()
+        }else{
+            self
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u8)]
 #[cfg_attr(feature = "crepr", repr(C))]
