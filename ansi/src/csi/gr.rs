@@ -1,5 +1,86 @@
 use super::*;
 
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "crepr", repr(C))]
+pub struct RGB{
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl RGB{
+    pub fn new(r: u8, g: u8, b: u8) -> Self{
+        RGB { r, g, b }
+    }
+
+    pub fn shade(w: u8) -> Self{
+        Self::new(w, w, w)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "crepr", repr(C))]
+pub struct VGA(pub u8);
+
+impl VGA{
+    pub fn as_rgb(self) -> RGB{
+        match self.0{
+            0 => RGB::new(0, 0, 0),
+            1 => RGB::new(170, 0, 0),
+            2 => RGB::new(0, 170, 0),
+            3 => RGB::new(170, 80, 0),
+            4 => RGB::new(0, 0, 170),
+            5 => RGB::new(170, 0, 170),
+            6 => RGB::new(0, 170, 170),
+            7 => RGB::new(192, 192, 192),
+            8 => RGB::new(170, 170, 170),
+            9 => RGB::new(255, 0, 0),
+            10 => RGB::new(0, 255, 0),
+            11 => RGB::new(255, 255, 0),
+            12 => RGB::new(0, 0, 255),
+            13 => RGB::new(255, 0, 170),
+            14 => RGB::new(0, 255, 255),
+            15 => RGB::new(255, 255, 255),
+
+            v @ 16..=231 => {
+                let v = v - 16;
+                let lookup = [0x0, 0x5f, 0x87, 0xaf, 0xd7, 0xff];
+
+                RGB::new(
+                    lookup[(v as usize / (6 * 6)) % 6],
+                    lookup[(v as usize / (6)) % 6],
+                    lookup[v as usize % 6],
+                )
+            }
+            v@ 232..=255 => RGB::shade((v - 232) * 10 + 8)
+        }
+    }
+
+    pub fn as_color(self) -> Color{
+        match self.0{
+            0 => Color::Black,
+            1 => Color::Red,
+            2 => Color::Green,
+            3 => Color::Yellow,
+            4 => Color::Blue,
+            5 => Color::Magenta,
+            6 => Color::Cyan,
+            7 => Color::White,
+            8 => Color::BrightBlack,
+            9 => Color::BrightRed,
+            10 => Color::BrightGreen,
+            11 => Color::BrightYellow,
+            12 => Color::BrightBlue,
+            13 => Color::BrightMagenta,
+            14 => Color::BrightCyan,
+            15 => Color::BrightWhite,
+
+            _ => Color::RGB(self.as_rgb())
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "crepr", repr(C))]
 pub enum Color {
@@ -23,8 +104,8 @@ pub enum Color {
     BrightCyan,
     BrightWhite,
 
-    VGA(u8),
-    RGB([u8; 3]),
+    VGA(VGA),
+    RGB(RGB),
 
     NotPresent,
     Invalid(u16),
@@ -114,7 +195,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedRGB;
                     };
                     if let (Ok(r), Ok(g), Ok(b)) = (r.try_into(), g.try_into(), b.try_into()) {
-                        return Color::RGB([r, g, b]);
+                        return Color::RGB(RGB{r, g, b});
                     } else {
                         return Color::MalformedVGA;
                     }
@@ -124,7 +205,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedRGB;
                     };
                     if let (Ok(r), Ok(g), Ok(b)) = (r.try_into(), g.try_into(), b.try_into()) {
-                        return Color::RGB([r, g, b]);
+                        return Color::RGB(RGB{r, g, b});
                     } else {
                         return Color::MalformedVGA;
                     }
@@ -134,7 +215,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     };
                     if let Ok(vga) = vga.try_into() {
-                        return Color::VGA(vga);
+                        return Color::VGA(VGA(vga));
                     } else {
                         return Color::MalformedVGA;
                     }
@@ -144,7 +225,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedVGA;
                     };
                     if let Ok(vga) = vga.try_into() {
-                        return Color::VGA(vga);
+                        return Color::VGA(VGA(vga));
                     } else {
                         return Color::MalformedVGA;
                     }

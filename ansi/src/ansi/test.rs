@@ -168,6 +168,9 @@ fn csi() {
 pub fn utf8() {
     use crate::*;
 
+    #[allow(clippy::identity_op)]
+    #[allow(clippy::precedence)]
+    #[allow(clippy::erasing_op)]
     fn encode(c: u32, vec: &mut std::vec::Vec<u8>) {
         let start = vec.len();
         if c < 0x80 {
@@ -191,7 +194,7 @@ pub fn utf8() {
             return vec.insert(start, ((c >> 6 * 4) as u8 & 0b11) | 0b11111000);
         }
         vec.insert(start, (((c >> 6 * 4) as u8) & 0b111111) | 0b10000000);
-        return vec.insert(start, ((c >> 6 * 5) as u8 & 0b1) | 0b11111100);
+        vec.insert(start, ((c >> 6 * 5) as u8 & 0b1) | 0b11111100);
     }
 
     let mut ansi = SizedAnsiParser::<256>::new();
