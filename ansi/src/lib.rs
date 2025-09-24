@@ -16,13 +16,12 @@ pub mod ffi;
 #[cfg(feature = "crepr")]
 pub use ffi::*;
 
-
 #[cfg(not(feature = "crepr"))]
 pub type FfiSlice<'a, T> = &'a [T];
 #[cfg(not(feature = "crepr"))]
-pub use char as FfiChar;
-#[cfg(not(feature = "crepr"))]
 pub use Option as FfiOption;
+#[cfg(not(feature = "crepr"))]
+pub use char as FfiChar;
 
 // // #[cfg(not(feature = "crepr"))]
 // // #[cfg(feature = "crepr")]

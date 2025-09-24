@@ -50,7 +50,9 @@ pub extern "C" fn ansic_csi_into_parser<'a>(csi: ansi::CSI<'a>) -> ansi::CSIPars
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn ansic_csi_next(parser: &mut ansi::CSIParser<'_>) -> ansi::FfiOption<ansi::CSIPart> {
+pub extern "C" fn ansic_csi_next(
+    parser: &mut ansi::CSIParser<'_>,
+) -> ansi::FfiOption<ansi::CSIPart> {
     parser.next().into()
 }
 

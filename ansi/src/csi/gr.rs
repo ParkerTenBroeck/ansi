@@ -1,20 +1,19 @@
 use super::*;
 
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "crepr", repr(C))]
-pub struct RGB{
+pub struct RGB {
     pub r: u8,
     pub g: u8,
     pub b: u8,
 }
 
-impl RGB{
-    pub fn new(r: u8, g: u8, b: u8) -> Self{
+impl RGB {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
         RGB { r, g, b }
     }
 
-    pub fn shade(w: u8) -> Self{
+    pub fn shade(w: u8) -> Self {
         Self::new(w, w, w)
     }
 }
@@ -23,9 +22,9 @@ impl RGB{
 #[cfg_attr(feature = "crepr", repr(C))]
 pub struct VGA(pub u8);
 
-impl VGA{
-    pub fn as_rgb(self) -> RGB{
-        match self.0{
+impl VGA {
+    pub fn as_rgb(self) -> RGB {
+        match self.0 {
             0 => RGB::new(0, 0, 0),
             1 => RGB::new(170, 0, 0),
             2 => RGB::new(0, 170, 0),
@@ -53,12 +52,12 @@ impl VGA{
                     lookup[v as usize % 6],
                 )
             }
-            v@ 232..=255 => RGB::shade((v - 232) * 10 + 8)
+            v @ 232..=255 => RGB::shade((v - 232) * 10 + 8),
         }
     }
 
-    pub fn as_color(self) -> Color{
-        match self.0{
+    pub fn as_color(self) -> Color {
+        match self.0 {
             0 => Color::Black,
             1 => Color::Red,
             2 => Color::Green,
@@ -76,14 +75,15 @@ impl VGA{
             14 => Color::BrightCyan,
             15 => Color::BrightWhite,
 
-            _ => Color::RGB(self.as_rgb())
+            _ => Color::RGB(self.as_rgb()),
         }
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 #[cfg_attr(feature = "crepr", repr(C))]
 pub enum Color {
+    #[default]
     Default,
 
     Black,
@@ -115,11 +115,11 @@ pub enum Color {
     MalformedRGB,
 }
 
-impl Color{
-    pub fn flatten_vga(self) -> Color{
-        if let Color::VGA(vga) = self{
+impl Color {
+    pub fn flatten_vga(self) -> Color {
+        if let Color::VGA(vga) = self {
             vga.as_color()
-        }else{
+        } else {
             self
         }
     }
@@ -205,7 +205,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedRGB;
                     };
                     if let (Ok(r), Ok(g), Ok(b)) = (r.try_into(), g.try_into(), b.try_into()) {
-                        return Color::RGB(RGB{r, g, b});
+                        return Color::RGB(RGB { r, g, b });
                     } else {
                         return Color::MalformedVGA;
                     }
@@ -215,7 +215,7 @@ impl<'a> GraphicsRendition<'a> {
                         return Color::MalformedRGB;
                     };
                     if let (Ok(r), Ok(g), Ok(b)) = (r.try_into(), g.try_into(), b.try_into()) {
-                        return Color::RGB(RGB{r, g, b});
+                        return Color::RGB(RGB { r, g, b });
                     } else {
                         return Color::MalformedVGA;
                     }
@@ -241,7 +241,9 @@ impl<'a> GraphicsRendition<'a> {
                     }
                 }
                 CSIPart::Param(crate::FfiOption::Some(other)) => return Color::InvalidLong(other),
-                CSIPart::SubParam(crate::FfiOption::Some(other)) => return Color::InvalidLong(other),
+                CSIPart::SubParam(crate::FfiOption::Some(other)) => {
+                    return Color::InvalidLong(other);
+                }
                 _ => return Color::InvalidLong(0),
             }
         }
@@ -335,7 +337,9 @@ impl<'a> Iterator for GraphicsRendition<'a> {
             CSIPart::Param(crate::FfiOption::Some(63)) => {
                 Some(SelectGraphic::IdeogramDoubleUnderline)
             }
-            CSIPart::Param(crate::FfiOption::Some(64)) => Some(SelectGraphic::IdeogramStressMarking),
+            CSIPart::Param(crate::FfiOption::Some(64)) => {
+                Some(SelectGraphic::IdeogramStressMarking)
+            }
             CSIPart::Param(crate::FfiOption::Some(65)) => Some(SelectGraphic::IdeogramAttributes),
             CSIPart::Param(crate::FfiOption::Some(73)) => Some(SelectGraphic::Superscript),
             CSIPart::Param(crate::FfiOption::Some(74)) => Some(SelectGraphic::Subscript),

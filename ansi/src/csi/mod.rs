@@ -12,12 +12,12 @@ pub use parser::*;
 #[repr(transparent)]
 pub struct CSI<'a>(pub crate::FfiSlice<'a, u8>);
 
-impl<'a> CSI<'a>{
-    pub fn parser(self) -> CSIParser<'a>{
+impl<'a> CSI<'a> {
+    pub fn parser(self) -> CSIParser<'a> {
         CSIParser::new(self.0.into())
     }
 
-    pub fn parse(self) -> KnownCSI<'a>{
+    pub fn parse(self) -> KnownCSI<'a> {
         self.parser().parse()
     }
 }

@@ -15,8 +15,6 @@ pub fn main() {
         .expect("Unable to generate bindings")
         .write_to_file(crate_dir.join("ansic.h"));
 
-    
-        
     let cpp_config = cbindgen::Config::from_file("cbindgen_cpp.toml")
         .expect("Unable to find cbindgen.toml configuration file");
 
